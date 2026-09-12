@@ -58,6 +58,10 @@ export default async function HomePage() {
         Déjà commandé ?{" "}
         <Link href="/suivi" className="underline text-[#3b5a34]">
           Suivre ma commande
+        </Link>{" "}
+        ·{" "}
+        <Link href="/compte/connexion" className="underline text-[#3b5a34]">
+          Mon compte
         </Link>
       </p>
 

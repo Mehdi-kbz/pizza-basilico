@@ -22,6 +22,20 @@ const emailShell = (title: string, bodyHtml: string) => `
   ${bodyHtml}
 </div>`;
 
+/** Lien magique de connexion (§3.1) — compte client optionnel, sans mot de passe. */
+export async function sendMagicLinkEmail(to: string, loginUrl: string) {
+  await getEmailProvider().send({
+    to,
+    subject: "Votre lien de connexion — Pizza Basilico",
+    html: emailShell(
+      "Votre lien de connexion",
+      `<p>Cliquez pour accéder à votre compte (historique de commandes, fidélité) :</p>
+       <p><a href="${loginUrl}" style="display:inline-block;background:#3b5a34;color:#fff;padding:10px 18px;border-radius:4px;text-decoration:none;">Se connecter</a></p>
+       <p style="color:#585a4d;font-size:13px;">Ce lien expire dans 15 minutes et ne peut servir qu'une seule fois.</p>`
+    ),
+  });
+}
+
 interface OrderForEmail {
   dailyOrderNumber: number;
   pickupName: string;
