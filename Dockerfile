@@ -21,6 +21,14 @@ COPY . .
 # d'exécution (fournies via .env) comptent à l'exécution.
 ENV DATABASE_URL="postgresql://build:build@localhost:5432/build"
 ENV SESSION_SECRET="build-time-placeholder"
+# Les variables NEXT_PUBLIC_* sont, elles, figées dans le bundle CLIENT au
+# moment du build — contrairement aux autres, il ne suffit pas de les fournir
+# au conteneur au démarrage : il faut les passer en --build-arg (voir
+# docker-compose.yml, build.args) pour qu'elles soient les vraies valeurs.
+ARG NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+ARG NEXT_PUBLIC_VAPID_PUBLIC_KEY
+ENV NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=$NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+ENV NEXT_PUBLIC_VAPID_PUBLIC_KEY=$NEXT_PUBLIC_VAPID_PUBLIC_KEY
 RUN npx prisma generate
 RUN npm run build
 

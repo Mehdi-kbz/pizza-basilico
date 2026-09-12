@@ -25,7 +25,12 @@ services:
     # conteneur `app` via le réseau interne du projet.
 
   app:
-    build: .
+    build:
+      context: .
+      args:
+        # Figées dans le bundle client au build — voir la note dans le Dockerfile.
+        NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY}
+        NEXT_PUBLIC_VAPID_PUBLIC_KEY: ${NEXT_PUBLIC_VAPID_PUBLIC_KEY}
     restart: unless-stopped
     depends_on:
       db:
