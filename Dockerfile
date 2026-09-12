@@ -16,8 +16,11 @@ RUN npm ci
 FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-# DATABASE_URL n'a pas besoin d'être valide pour générer le client / builder Next.js
+# DATABASE_URL/SESSION_SECRET n'ont pas besoin d'être valides pour générer le
+# client Prisma / builder Next.js — seules les vraies valeurs du conteneur
+# d'exécution (fournies via .env) comptent à l'exécution.
 ENV DATABASE_URL="postgresql://build:build@localhost:5432/build"
+ENV SESSION_SECRET="build-time-placeholder"
 RUN npx prisma generate
 RUN npm run build
 
@@ -28,7 +31,10 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/src/generated ./src/generated
+COPY --from=builder /app/prisma7.config.ts ./prisma7.config.ts
+COPY --from=builder /app/src ./src
+COPY --from=builder /app/scripts ./scripts
+COPY --from=builder /app/tsconfig.json ./tsconfig.json
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/next.config.ts ./next.config.ts
 COPY docker-entrypoint.sh ./docker-entrypoint.sh
