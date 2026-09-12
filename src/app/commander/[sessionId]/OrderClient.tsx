@@ -18,6 +18,7 @@ interface MenuItem {
   isSpicy: boolean;
   isNew: boolean;
   isSpecialty: boolean;
+  composition: string[];
   sizes: MenuItemSize[];
 }
 interface Category {
@@ -30,7 +31,6 @@ interface Supplement {
   name: string;
   priceCents: number;
 }
-
 interface CartLine {
   key: string;
   menuItemId: string;
@@ -42,6 +42,11 @@ interface CartLine {
   addedIngredientNames: string[];
   unitPriceCents: number;
 }
+interface Loyalty {
+  stampCount: number;
+  eligibleForFreeItem: boolean;
+  stampsUntilFree: number;
+}
 
 const eur = (cents: number) => (cents / 100).toLocaleString("fr-FR", { style: "currency", currency: "EUR" });
 
@@ -49,13 +54,13 @@ const stripePromise = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
   ? loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
   : null;
 
-function TAG_LABELS({ isVegetarian, isSpicy, isNew, isSpecialty }: MenuItem) {
-  const tags: string[] = [];
-  if (isSpecialty) tags.push("⭐ Spécialité");
-  if (isNew) tags.push("Nouveau");
-  if (isVegetarian) tags.push("Végétarien");
-  if (isSpicy) tags.push("Épicé");
-  return tags;
+function tags(item: MenuItem) {
+  const out: { label: string; cls: string }[] = [];
+  if (item.isSpecialty) out.push({ label: "Spécialité", cls: "chip-brass" });
+  if (item.isNew) out.push({ label: "Nouveau", cls: "chip-flame" });
+  if (item.isVegetarian) out.push({ label: "Végétarien", cls: "chip-basil" });
+  if (item.isSpicy) out.push({ label: "Épicé", cls: "chip-flame" });
+  return out;
 }
 
 export function OrderClient({
@@ -80,20 +85,20 @@ export function OrderClient({
   const [trackingUrl, setTrackingUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [loyalty, setLoyalty] = useState<{ stampCount: number; eligibleForFreeItem: boolean; stampsUntilFree: number } | null>(null);
+  const [loyalty, setLoyalty] = useState<Loyalty | null>(null);
   const [redeemLoyalty, setRedeemLoyalty] = useState(false);
+  const [openExtras, setOpenExtras] = useState<string | null>(null);
 
-  const subtotal = useMemo(
-    () => cart.reduce((sum, l) => sum + l.unitPriceCents * l.quantity, 0),
-    [cart]
-  );
-  // Estimation d'affichage seulement — le montant exact est recalculé et vérifié côté serveur (§8, §6.3).
-  const cheapestFreeEstimate = redeemLoyalty && loyalty?.eligibleForFreeItem
-    ? Math.max(0, ...cart.map((l) => l.unitPriceCents))
-    : 0;
-  const total = Math.max(0, subtotal - cheapestFreeEstimate) + tip;
+  const subtotal = useMemo(() => cart.reduce((sum, l) => sum + l.unitPriceCents * l.quantity, 0), [cart]);
 
-  // Statut de fidélité (§8) — consulté dès qu'un e-mail valide est saisi.
+  // Estimation d'affichage : le montant exact est recalculé côté serveur.
+  const freeItemEstimate =
+    redeemLoyalty && loyalty?.eligibleForFreeItem && cart.length > 0
+      ? Math.max(...cart.map((l) => l.unitPriceCents))
+      : 0;
+  const total = Math.max(0, subtotal - freeItemEstimate) + tip;
+  const itemCount = cart.reduce((n, l) => n + l.quantity, 0);
+
   useEffect(() => {
     if (!email.includes("@")) {
       setLoyalty(null);
@@ -108,31 +113,42 @@ export function OrderClient({
 
   function addToCart(item: MenuItem, size: MenuItemSize, extras: Supplement[]) {
     const unitPriceCents = size.priceCents + extras.reduce((s, e) => s + e.priceCents, 0);
-    setCart((prev) => [
-      ...prev,
-      {
-        key: `${item.id}-${size.id}-${extras.map((e) => e.id).join(",")}-${Date.now()}`,
-        menuItemId: item.id,
-        menuItemName: item.name,
-        sizeId: size.id,
-        sizeLabel: size.label,
-        quantity: 1,
-        addedIngredientIds: extras.map((e) => e.id),
-        addedIngredientNames: extras.map((e) => e.name),
-        unitPriceCents,
-      },
-    ]);
+    const signature = `${item.id}|${size.id}|${extras.map((e) => e.id).sort().join(",")}`;
+
+    setCart((prev) => {
+      const existing = prev.find((l) => l.key === signature);
+      if (existing) return prev.map((l) => (l.key === signature ? { ...l, quantity: l.quantity + 1 } : l));
+      return [
+        ...prev,
+        {
+          key: signature,
+          menuItemId: item.id,
+          menuItemName: item.name,
+          sizeId: size.id,
+          sizeLabel: size.label,
+          quantity: 1,
+          addedIngredientIds: extras.map((e) => e.id),
+          addedIngredientNames: extras.map((e) => e.name),
+          unitPriceCents,
+        },
+      ];
+    });
+    setOpenExtras(null);
   }
 
-  function removeLine(key: string) {
-    setCart((prev) => prev.filter((l) => l.key !== key));
+  function changeQty(key: string, delta: number) {
+    setCart((prev) =>
+      prev
+        .map((l) => (l.key === key ? { ...l, quantity: l.quantity + delta } : l))
+        .filter((l) => l.quantity > 0)
+    );
   }
 
   async function startCheckout() {
     setError(null);
     if (cart.length === 0) return setError("Votre panier est vide.");
-    if (!pickupName.trim()) return setError("Merci d'indiquer un nom pour le retrait.");
-    if (!email.trim()) return setError("Merci d'indiquer une adresse e-mail.");
+    if (!pickupName.trim()) return setError("Indiquez un nom pour le retrait.");
+    if (!email.trim()) return setError("Indiquez une adresse e-mail.");
 
     setSubmitting(true);
     try {
@@ -163,144 +179,354 @@ export function OrderClient({
       setClientSecret(data.clientSecret);
       setTrackingUrl(data.trackingUrl);
       setStep("payment");
+      window.scrollTo({ top: 0, behavior: "smooth" });
     } finally {
       setSubmitting(false);
     }
   }
 
+  /* ------------------------------- États bloqués ------------------------------ */
+
   if (!isOrderingOpen) {
     return (
-      <p className="rounded-lg border border-[#d9d6c6] bg-white/60 p-5">
-        Les commandes sont actuellement fermées pour cette session.
-      </p>
+      <div className="mx-auto max-w-6xl px-5 lg:px-8 pb-20">
+        <div className="card p-8 max-w-xl">
+          <p className="display text-2xl">Les commandes sont fermées.</p>
+          <p className="text-cream-dim mt-3 leading-relaxed">
+            Le service en cours n&rsquo;accepte plus de nouvelles commandes. Passez directement au
+            camion ou consultez les prochains emplacements.
+          </p>
+        </div>
+      </div>
     );
   }
 
   if (step === "payment" && clientSecret && trackingUrl && stripePromise) {
     return (
-      <Elements stripe={stripePromise} options={{ clientSecret }}>
-        <PaymentStep totalCents={total} trackingUrl={trackingUrl} />
-      </Elements>
+      <div className="mx-auto max-w-xl px-5 lg:px-8 pb-24">
+        <Elements
+          stripe={stripePromise}
+          options={{
+            clientSecret,
+            appearance: {
+              theme: "night",
+              variables: {
+                colorPrimary: "#ff7a2f",
+                colorBackground: "#1b1512",
+                colorText: "#f6efe3",
+                colorDanger: "#cf4234",
+                borderRadius: "10px",
+                fontSizeBase: "15px",
+              },
+            },
+          }}
+        >
+          <PaymentStep totalCents={total} trackingUrl={trackingUrl} />
+        </Elements>
+      </div>
     );
   }
 
+  if (step === "payment" && !stripePromise) {
+    return (
+      <div className="mx-auto max-w-xl px-5 lg:px-8 pb-24">
+        <div className="card p-8 border-l-2 border-l-tomato">
+          <p className="display text-xl">Paiement indisponible</p>
+          <p className="text-cream-dim mt-3 text-sm leading-relaxed">
+            Le module de paiement n&rsquo;est pas encore configuré sur ce site. Votre commande
+            n&rsquo;a pas été enregistrée.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  /* --------------------------------- Menu + panier -------------------------------- */
+
   return (
-    <div className="flex flex-col gap-8">
-      <div className="flex flex-col gap-6">
-        {categories.map((cat) => (
-          <section key={cat.id}>
-            <h2 className="text-lg font-semibold mb-2">{cat.name}</h2>
-            <ul className="flex flex-col gap-2">
-              {cat.items.map((item) => (
-                <MenuItemRow key={item.id} item={item} supplements={supplements} onAdd={addToCart} />
-              ))}
-            </ul>
-          </section>
-        ))}
+    <div className="mx-auto max-w-6xl px-5 lg:px-8 pb-32 lg:pb-20">
+      <div className="grid lg:grid-cols-[1fr_380px] gap-10 items-start">
+        {/* -------- Carte -------- */}
+        <div className="flex flex-col gap-12 min-w-0">
+          {categories.map((cat) => (
+            <section key={cat.id}>
+              <div className="flex items-center gap-4 mb-5">
+                <h2 className="display text-[clamp(1.35rem,3.2vw,1.8rem)] whitespace-nowrap">{cat.name}</h2>
+                <span className="hairline flex-1" />
+              </div>
+
+              <ul className="flex flex-col gap-2.5">
+                {cat.items.map((item) => (
+                  <li key={item.id} className="card p-4 sm:p-5">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="min-w-0">
+                        <h3 className="display text-[1.2rem] text-cream leading-snug">{item.name}</h3>
+                        {item.composition.length > 0 && (
+                          <p className="text-[0.82rem] text-cream-dim mt-1.5 leading-relaxed">
+                            {item.composition.join(" · ")}
+                          </p>
+                        )}
+                        {item.description && (
+                          <p className="text-[0.78rem] text-cream-faint italic mt-1">{item.description}</p>
+                        )}
+                        {tags(item).length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 mt-2.5">
+                            {tags(item).map((t) => (
+                              <span key={t.label} className={`chip ${t.cls}`}>
+                                {t.label}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2 mt-4">
+                      {item.sizes.map((size) => (
+                        <button
+                          key={size.id}
+                          onClick={() => addToCart(item, size, [])}
+                          className="btn btn-ghost !py-2 !px-4 !text-[0.82rem] !rounded-lg"
+                        >
+                          <span>
+                            {item.sizes.length > 1 ? `${size.label} · ` : "Ajouter · "}
+                            <span className="tnum text-ember font-semibold">{eur(size.priceCents)}</span>
+                          </span>
+                        </button>
+                      ))}
+
+                      {supplements.length > 0 && (
+                        <button
+                          onClick={() => setOpenExtras(openExtras === item.id ? null : item.id)}
+                          className="text-[0.78rem] text-cream-faint hover:text-ember transition-colors ml-1"
+                          aria-expanded={openExtras === item.id}
+                        >
+                          {openExtras === item.id ? "− suppléments" : "+ suppléments"}
+                        </button>
+                      )}
+                    </div>
+
+                    {openExtras === item.id && (
+                      <ExtrasPicker item={item} supplements={supplements} onAdd={addToCart} />
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ))}
+        </div>
+
+        {/* -------- Panier -------- */}
+        <aside className="lg:sticky lg:top-[88px]">
+          <div className="card p-5 md:p-6">
+            <div className="flex items-baseline justify-between">
+              <h2 className="display text-xl">Votre commande</h2>
+              {itemCount > 0 && <span className="chip chip-flame tnum">{itemCount} article(s)</span>}
+            </div>
+
+            {cart.length === 0 ? (
+              <p className="text-sm text-cream-faint mt-4">
+                Votre panier est vide. Choisissez une pizza pour commencer.
+              </p>
+            ) : (
+              <ul className="flex flex-col gap-3 mt-5">
+                {cart.map((l) => (
+                  <li key={l.key} className="flex items-start gap-3 text-sm">
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        onClick={() => changeQty(l.key, -1)}
+                        className="w-6 h-6 rounded-md border border-line text-cream-dim hover:border-ember hover:text-ember transition-colors leading-none"
+                        aria-label={`Retirer un ${l.menuItemName}`}
+                      >
+                        −
+                      </button>
+                      <span className="tnum w-4 text-center text-cream">{l.quantity}</span>
+                      <button
+                        onClick={() => changeQty(l.key, 1)}
+                        className="w-6 h-6 rounded-md border border-line text-cream-dim hover:border-ember hover:text-ember transition-colors leading-none"
+                        aria-label={`Ajouter un ${l.menuItemName}`}
+                      >
+                        +
+                      </button>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-cream leading-snug">
+                        {l.menuItemName}
+                        <span className="text-cream-faint"> · {l.sizeLabel}</span>
+                      </p>
+                      {l.addedIngredientNames.length > 0 && (
+                        <p className="text-[0.75rem] text-ember/80">+ {l.addedIngredientNames.join(", ")}</p>
+                      )}
+                    </div>
+                    <span className="tnum text-cream shrink-0">{eur(l.unitPriceCents * l.quantity)}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            <div className="hairline my-5" />
+
+            <div className="flex flex-col gap-3">
+              <div>
+                <label htmlFor="pickup-name" className="block text-xs text-cream-dim mb-1.5">
+                  Nom pour le retrait
+                </label>
+                <input
+                  id="pickup-name"
+                  className="field"
+                  value={pickupName}
+                  onChange={(e) => setPickupName(e.target.value)}
+                  placeholder="Ex. Mehdi"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="order-email" className="block text-xs text-cream-dim mb-1.5">
+                  E-mail
+                </label>
+                <input
+                  id="order-email"
+                  type="email"
+                  className="field"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="vous@exemple.fr"
+                />
+              </div>
+
+              {loyalty && (
+                <div className="rounded-lg border border-line-warm/70 bg-flame/5 px-3.5 py-3">
+                  {loyalty.eligibleForFreeItem ? (
+                    <label className="flex items-start gap-2.5 text-[0.82rem] text-cream cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={redeemLoyalty}
+                        onChange={(e) => setRedeemLoyalty(e.target.checked)}
+                        className="mt-0.5 accent-[#ff7a2f]"
+                      />
+                      <span>
+                        <strong className="text-ember">Une pizza offerte vous attend.</strong> L&rsquo;utiliser
+                        sur cette commande (la plus chère du panier).
+                      </span>
+                    </label>
+                  ) : (
+                    <p className="text-[0.8rem] text-cream-dim tnum">
+                      {loyalty.stampCount} tampon{loyalty.stampCount > 1 ? "s" : ""} — encore{" "}
+                      {loyalty.stampsUntilFree} pour une pizza offerte.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              <details className="text-sm">
+                <summary className="cursor-pointer text-cream-faint hover:text-cream-dim transition-colors text-[0.82rem]">
+                  Note, code promo, pourboire
+                </summary>
+                <div className="flex flex-col gap-3 mt-3">
+                  <textarea
+                    className="field resize-y"
+                    rows={2}
+                    placeholder="Note (ex. bien cuite)"
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                  />
+                  <input
+                    className="field uppercase"
+                    placeholder="Code promo"
+                    value={promoCode}
+                    onChange={(e) => setPromoCode(e.target.value)}
+                  />
+                  <div>
+                    <p className="text-xs text-cream-dim mb-2">Pourboire pour l&rsquo;équipe</p>
+                    <div className="flex gap-2">
+                      {[0, 100, 200, 300].map((c) => (
+                        <button
+                          key={c}
+                          type="button"
+                          onClick={() => setTip(c)}
+                          aria-pressed={tip === c}
+                          className={`chip !text-[0.72rem] transition-colors ${
+                            tip === c ? "!border-ember !text-ember !bg-flame/10" : ""
+                          }`}
+                        >
+                          {c === 0 ? "Aucun" : eur(c)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </details>
+            </div>
+
+            <div className="hairline my-5" />
+
+            <dl className="flex flex-col gap-1.5 text-sm">
+              <div className="flex justify-between text-cream-dim">
+                <dt>Sous-total</dt>
+                <dd className="tnum">{eur(subtotal)}</dd>
+              </div>
+              {freeItemEstimate > 0 && (
+                <div className="flex justify-between text-basil">
+                  <dt>Pizza offerte (fidélité)</dt>
+                  <dd className="tnum">−{eur(freeItemEstimate)}</dd>
+                </div>
+              )}
+              {tip > 0 && (
+                <div className="flex justify-between text-cream-dim">
+                  <dt>Pourboire</dt>
+                  <dd className="tnum">{eur(tip)}</dd>
+                </div>
+              )}
+              <div className="flex justify-between items-baseline mt-1.5">
+                <dt className="display text-lg text-cream">Total</dt>
+                <dd className="display text-2xl text-ember tnum">{eur(total)}</dd>
+              </div>
+            </dl>
+
+            {error && (
+              <p className="text-tomato text-sm mt-4 border-l-2 border-tomato pl-3 leading-relaxed">{error}</p>
+            )}
+
+            <button
+              onClick={startCheckout}
+              disabled={submitting || cart.length === 0}
+              className="btn btn-primary w-full mt-5"
+            >
+              {submitting ? "…" : "Passer au paiement"}
+            </button>
+
+            <p className="text-[0.7rem] text-cream-faint mt-3 leading-relaxed">
+              Le créneau de retrait vous est confirmé juste après le paiement. Vente à emporter
+              uniquement, retrait au camion.
+            </p>
+          </div>
+        </aside>
       </div>
 
-      <section className="rounded-lg border border-[#d9d6c6] bg-white/70 p-5 sticky bottom-4">
-        <h2 className="font-semibold mb-3">Votre commande</h2>
-        {cart.length === 0 ? (
-          <p className="text-sm text-[#585a4d]">Panier vide.</p>
-        ) : (
-          <ul className="flex flex-col gap-2 mb-4">
-            {cart.map((l) => (
-              <li key={l.key} className="flex justify-between text-sm gap-2">
-                <span>
-                  {l.menuItemName} ({l.sizeLabel})
-                  {l.addedIngredientNames.length > 0 && (
-                    <span className="text-[#585a4d]"> + {l.addedIngredientNames.join(", ")}</span>
-                  )}
-                </span>
-                <span className="flex items-center gap-2 shrink-0">
-                  {eur(l.unitPriceCents)}
-                  <button onClick={() => removeLine(l.key)} className="text-[#a5462d] text-xs underline">
-                    retirer
-                  </button>
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-
-        <div className="grid gap-2 mb-3">
-          <input
-            className="border border-[#d9d6c6] rounded px-3 py-2 text-sm bg-white"
-            placeholder="Nom pour le retrait"
-            value={pickupName}
-            onChange={(e) => setPickupName(e.target.value)}
-          />
-          <input
-            className="border border-[#d9d6c6] rounded px-3 py-2 text-sm bg-white"
-            placeholder="E-mail"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-
-          {loyalty && (
-            <div className="text-xs rounded border border-[#d9d6c6] bg-[#e4e9dc] px-3 py-2">
-              {loyalty.eligibleForFreeItem ? (
-                <label className="flex items-center gap-2">
-                  <input type="checkbox" checked={redeemLoyalty} onChange={(e) => setRedeemLoyalty(e.target.checked)} />
-                  🎉 Une pizza offerte est disponible — l&rsquo;utiliser sur cette commande
-                </label>
-              ) : (
-                <span>
-                  {loyalty.stampCount} tampon{loyalty.stampCount > 1 ? "s" : ""} — encore {loyalty.stampsUntilFree} pour une pizza offerte
-                </span>
-              )}
+      {/* Barre de résumé mobile */}
+      {cart.length > 0 && (
+        <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 border-t border-line bg-ink/95 backdrop-blur-md px-5 py-3.5">
+          <div className="flex items-center gap-4">
+            <div className="min-w-0">
+              <p className="text-[0.7rem] text-cream-faint tnum">{itemCount} article(s)</p>
+              <p className="display text-xl text-ember tnum leading-none">{eur(total)}</p>
             </div>
-          )}
-
-          <textarea
-            className="border border-[#d9d6c6] rounded px-3 py-2 text-sm bg-white"
-            placeholder="Note (facultatif)"
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-          />
-          <input
-            className="border border-[#d9d6c6] rounded px-3 py-2 text-sm bg-white uppercase"
-            placeholder="Code promo (facultatif)"
-            value={promoCode}
-            onChange={(e) => setPromoCode(e.target.value)}
-          />
-          <label className="text-sm flex items-center gap-2">
-            Pourboire :
-            {[0, 100, 200, 300].map((c) => (
-              <button
-                type="button"
-                key={c}
-                onClick={() => setTip(c)}
-                className={`px-2 py-1 rounded border text-xs ${tip === c ? "bg-[#3b5a34] text-white border-[#3b5a34]" : "border-[#d9d6c6]"}`}
-              >
-                {c === 0 ? "Aucun" : eur(c)}
-              </button>
-            ))}
-          </label>
+            <button
+              onClick={() => document.getElementById("pickup-name")?.scrollIntoView({ behavior: "smooth", block: "center" })}
+              className="btn btn-primary flex-1 !py-3"
+            >
+              Finaliser
+            </button>
+          </div>
         </div>
-
-        <div className="flex justify-between font-medium mb-3">
-          <span>Total</span>
-          <span>{eur(total)}</span>
-        </div>
-
-        {error && <p className="text-[#a5462d] text-sm mb-2">{error}</p>}
-
-        <button
-          onClick={startCheckout}
-          disabled={submitting}
-          className="w-full bg-[#3b5a34] text-white rounded py-2.5 font-medium disabled:opacity-50"
-        >
-          {submitting ? "…" : "Passer au paiement"}
-        </button>
-      </section>
+      )}
     </div>
   );
 }
 
-function MenuItemRow({
+/* ------------------------------ Sous-composants ----------------------------- */
+
+function ExtrasPicker({
   item,
   supplements,
   onAdd,
@@ -309,64 +535,51 @@ function MenuItemRow({
   supplements: Supplement[];
   onAdd: (item: MenuItem, size: MenuItemSize, extras: Supplement[]) => void;
 }) {
+  const [selected, setSelected] = useState<string[]>([]);
   const [sizeId, setSizeId] = useState(item.sizes[0]?.id);
-  const [extraIds, setExtraIds] = useState<string[]>([]);
   const size = item.sizes.find((s) => s.id === sizeId) ?? item.sizes[0];
+  const extras = supplements.filter((s) => selected.includes(s.id));
+  const extraTotal = extras.reduce((sum, e) => sum + e.priceCents, 0);
 
   return (
-    <li className="rounded-lg border border-[#d9d6c6] bg-white/60 p-4">
-      <div className="flex justify-between gap-3">
-        <div>
-          <p className="font-medium">{item.name}</p>
-          {item.description && <p className="text-sm text-[#585a4d]">{item.description}</p>}
-          {TAG_LABELS(item).length > 0 && (
-            <p className="text-xs text-[#3b5a34] mt-1">{TAG_LABELS(item).join(" · ")}</p>
-          )}
-        </div>
-        <p className="font-medium shrink-0">{size && eur(size.priceCents)}</p>
+    <div className="mt-4 pt-4 border-t border-line">
+      <div className="flex flex-wrap gap-2">
+        {supplements.map((s) => {
+          const on = selected.includes(s.id);
+          return (
+            <button
+              key={s.id}
+              onClick={() => setSelected((prev) => (on ? prev.filter((id) => id !== s.id) : [...prev, s.id]))}
+              aria-pressed={on}
+              className={`chip !text-[0.72rem] transition-colors ${on ? "!border-ember !text-ember !bg-flame/10" : ""}`}
+            >
+              {s.name} +{eur(s.priceCents)}
+            </button>
+          );
+        })}
       </div>
 
-      {item.sizes.length > 1 && (
-        <div className="flex gap-2 mt-2">
-          {item.sizes.map((s) => (
+      <div className="flex flex-wrap items-center gap-2 mt-4">
+        {item.sizes.length > 1 &&
+          item.sizes.map((s) => (
             <button
               key={s.id}
               onClick={() => setSizeId(s.id)}
-              className={`text-xs px-2 py-1 rounded border ${s.id === sizeId ? "bg-[#3b5a34] text-white border-[#3b5a34]" : "border-[#d9d6c6]"}`}
+              aria-pressed={s.id === sizeId}
+              className={`chip !text-[0.72rem] ${s.id === sizeId ? "!border-ember !text-ember !bg-flame/10" : ""}`}
             >
               {s.label}
             </button>
           ))}
-        </div>
-      )}
 
-      {supplements.length > 0 && (
-        <details className="mt-2">
-          <summary className="text-xs text-[#585a4d] cursor-pointer">Suppléments</summary>
-          <div className="flex flex-wrap gap-2 mt-2">
-            {supplements.map((s) => (
-              <label key={s.id} className="text-xs flex items-center gap-1 border border-[#d9d6c6] rounded px-2 py-1">
-                <input
-                  type="checkbox"
-                  checked={extraIds.includes(s.id)}
-                  onChange={(e) =>
-                    setExtraIds((prev) => (e.target.checked ? [...prev, s.id] : prev.filter((id) => id !== s.id)))
-                  }
-                />
-                {s.name} (+{eur(s.priceCents)})
-              </label>
-            ))}
-          </div>
-        </details>
-      )}
-
-      <button
-        onClick={() => size && onAdd(item, size, supplements.filter((s) => extraIds.includes(s.id)))}
-        className="mt-3 text-sm bg-[#232017] text-white rounded px-3 py-1.5"
-      >
-        Ajouter
-      </button>
-    </li>
+        <button
+          onClick={() => size && onAdd(item, size, extras)}
+          className="btn btn-primary !py-2 !px-4 !text-[0.8rem] ml-auto"
+        >
+          Ajouter · <span className="tnum">{eur((size?.priceCents ?? 0) + extraTotal)}</span>
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -382,8 +595,6 @@ function PaymentStep({ totalCents, trackingUrl }: { totalCents: number; tracking
     if (!stripe || !elements) return;
     setLoading(true);
     setError(null);
-    // Pour un moyen de paiement redirigeant le navigateur (ex. certains virements/3DS),
-    // Stripe renvoie directement vers la page de suivi réelle de la commande.
     const { error: confirmError } = await stripe.confirmPayment({
       elements,
       confirmParams: { return_url: `${window.location.origin}${trackingUrl}` },
@@ -398,12 +609,24 @@ function PaymentStep({ totalCents, trackingUrl }: { totalCents: number; tracking
   }
 
   return (
-    <form onSubmit={handlePay} className="rounded-lg border border-[#d9d6c6] bg-white/70 p-5 flex flex-col gap-4">
-      <p className="font-medium">Paiement — {eur(totalCents)}</p>
-      <PaymentElement />
-      {error && <p className="text-[#a5462d] text-sm">{error}</p>}
-      <button disabled={!stripe || loading} className="bg-[#3b5a34] text-white rounded py-2.5 font-medium disabled:opacity-50">
-        {loading ? "…" : "Payer"}
+    <form onSubmit={handlePay} className="card p-6 md:p-8">
+      <p className="eyebrow">Dernière étape</p>
+      <h2 className="display text-[clamp(1.6rem,4vw,2.2rem)] mt-3">
+        Paiement · <span className="text-ember tnum">{eur(totalCents)}</span>
+      </h2>
+      <p className="text-sm text-cream-dim mt-2 leading-relaxed">
+        Votre créneau est réservé le temps du paiement. Les données de carte ne passent jamais par
+        nos serveurs.
+      </p>
+
+      <div className="mt-7">
+        <PaymentElement />
+      </div>
+
+      {error && <p className="text-tomato text-sm mt-4 border-l-2 border-tomato pl-3">{error}</p>}
+
+      <button disabled={!stripe || loading} className="btn btn-primary w-full mt-6">
+        {loading ? "Paiement en cours…" : `Payer ${eur(totalCents)}`}
       </button>
     </form>
   );

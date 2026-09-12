@@ -22,33 +22,46 @@ export function ConnexionForm() {
     setSent(true);
   }
 
+  if (sent) {
+    return (
+      <div>
+        <p className="display text-xl text-basil">Lien envoyé.</p>
+        <p className="text-sm text-cream-dim mt-2.5 leading-relaxed">
+          Si cette adresse nous est connue, un e-mail vient de partir avec votre lien de connexion.
+          Il est valable 15 minutes.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <>
       {erreur && (
-        <p className="text-[#a5462d] text-sm mb-4">
-          {erreur === "lien_expire" ? "Ce lien a expiré ou a déjà été utilisé, demandez-en un nouveau." : "Lien invalide."}
+        <p className="text-tomato text-sm mb-4 border-l-2 border-tomato pl-3 leading-relaxed">
+          {erreur === "lien_expire"
+            ? "Ce lien a expiré ou a déjà servi. Demandez-en un nouveau."
+            : "Lien invalide."}
         </p>
       )}
-
-      {sent ? (
-        <p className="text-[#3b5a34] text-sm">
-          Si cette adresse est connue, un e-mail vient d&rsquo;être envoyé avec votre lien de connexion.
-        </p>
-      ) : (
-        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <div>
+          <label htmlFor="login-email" className="block text-xs text-cream-dim mb-1.5">
+            Votre e-mail
+          </label>
           <input
+            id="login-email"
             type="email"
             required
-            placeholder="Votre e-mail"
+            className="field"
+            placeholder="vous@exemple.fr"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="border border-[#d9d6c6] rounded px-3 py-2 text-sm bg-white"
           />
-          <button disabled={loading} className="bg-[#232017] text-white rounded py-2.5 font-medium disabled:opacity-50">
-            {loading ? "…" : "Recevoir mon lien de connexion"}
-          </button>
-        </form>
-      )}
+        </div>
+        <button disabled={loading} className="btn btn-primary">
+          {loading ? "Envoi…" : "Recevoir mon lien"}
+        </button>
+      </form>
     </>
   );
 }

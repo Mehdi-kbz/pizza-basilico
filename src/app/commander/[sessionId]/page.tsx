@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { isEffectivelyAvailable } from "@/lib/menu-availability";
+import { findNextAvailableSlot } from "@/lib/slots";
 import { OrderClient } from "./OrderClient";
 
 export const dynamic = "force-dynamic";
@@ -14,41 +16,83 @@ export default async function CommanderPage({ params }: { params: Promise<{ sess
   });
   if (!session) notFound();
 
-  const categoriesRaw = await prisma.menuCategory.findMany({
-    orderBy: { sortOrder: "asc" },
-    include: {
-      items: {
-        orderBy: { sortOrder: "asc" },
-        include: { sizes: true, ingredients: { include: { ingredient: true } } },
+  const [categoriesRaw, supplements, nextSlot] = await Promise.all([
+    prisma.menuCategory.findMany({
+      orderBy: { sortOrder: "asc" },
+      include: {
+        items: {
+          orderBy: { sortOrder: "asc" },
+          include: { sizes: true, ingredients: { include: { ingredient: true } } },
+        },
       },
-    },
-  });
+    }),
+    prisma.ingredient.findMany({ where: { isSupplement: true, isAvailable: true }, orderBy: { priceCents: "asc" } }),
+    findNextAvailableSlot(sessionId, 1),
+  ]);
 
-  // Disponibilité en cascade (§5.4) : un article n'apparaît que s'il est activé
-  // ET qu'aucun de ses composants fixes n'est en rupture.
-  const categories = categoriesRaw.map((cat) => ({
-    ...cat,
-    items: cat.items.filter(isEffectivelyAvailable),
-  }));
+  const categories = categoriesRaw
+    .map((cat) => ({
+      id: cat.id,
+      name: cat.name,
+      items: cat.items.filter(isEffectivelyAvailable).map((item) => ({
+        id: item.id,
+        name: item.name,
+        description: item.description,
+        isVegetarian: item.isVegetarian,
+        isSpicy: item.isSpicy,
+        isNew: item.isNew,
+        isSpecialty: item.isSpecialty,
+        composition: item.ingredients.map((l) => l.ingredient.name),
+        sizes: item.sizes.map((s) => ({ id: s.id, label: s.label, priceCents: s.priceCents })),
+      })),
+    }))
+    .filter((c) => c.items.length > 0);
 
-  const supplements = await prisma.ingredient.findMany({
-    where: { isSupplement: true, isAvailable: true },
-    orderBy: { name: "asc" },
-  });
+  const timeFmt = new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-digit" });
+  const dayFmt = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long" });
 
   return (
-    <main className="mx-auto max-w-3xl w-full px-5 py-8 flex-1">
-      <header className="mb-6">
-        <p className="text-xs tracking-[0.14em] uppercase text-[#a5462d] font-medium">Pizza Basilico</p>
-        <h1 className="text-2xl font-semibold mt-1">{session.location.label}</h1>
-        <p className="text-[#585a4d] text-sm">{session.location.address}</p>
-      </header>
+    <main className="relative">
+      <div
+        className="absolute inset-x-0 top-0 h-[320px] -z-10"
+        aria-hidden="true"
+        style={{ background: "radial-gradient(800px 320px at 65% 0%, rgba(255,122,47,0.12), transparent 62%)" }}
+      />
+
+      <div className="mx-auto max-w-6xl px-5 lg:px-8 pt-10 md:pt-14 pb-4">
+        <Link href="/#nous-trouver" className="text-xs text-cream-faint hover:text-cream-dim transition-colors">
+          ← Tous les emplacements
+        </Link>
+
+        <div className="flex flex-wrap items-end justify-between gap-5 mt-4">
+          <div>
+            <p className="eyebrow">Commander · retrait au camion</p>
+            <h1 className="display text-[clamp(2rem,5.5vw,3.2rem)] mt-3">{session.location.label}</h1>
+            <p className="text-sm text-cream-dim mt-2 capitalize">
+              {dayFmt.format(session.startAt)} · {timeFmt.format(session.startAt)} – {timeFmt.format(session.endAt)}
+            </p>
+            <p className="text-xs text-cream-faint mt-1">{session.location.address}</p>
+          </div>
+
+          {nextSlot && session.isOrderingOpen && (
+            <div className="card px-5 py-4">
+              <p className="text-[0.65rem] uppercase tracking-[0.18em] text-cream-faint">Prochain créneau libre</p>
+              <p className="display text-2xl text-ember tnum mt-1">
+                {timeFmt.format(nextSlot.startAt)} – {timeFmt.format(nextSlot.endAt)}
+              </p>
+              <p className="text-[0.7rem] text-cream-faint mt-1 tnum">
+                {nextSlot.unitsCap - nextSlot.unitsCommitted} place(s) restante(s) sur ce créneau
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
 
       <OrderClient
         sessionId={session.id}
         isOrderingOpen={session.isOrderingOpen}
-        categories={categories.filter((c) => c.items.length > 0)}
-        supplements={supplements}
+        categories={categories}
+        supplements={supplements.map((s) => ({ id: s.id, name: s.name, priceCents: s.priceCents }))}
       />
     </main>
   );

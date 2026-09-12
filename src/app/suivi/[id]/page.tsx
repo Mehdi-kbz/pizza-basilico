@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { verifyOrderTrackingToken } from "@/lib/auth";
 import { StatusView } from "./StatusView";
@@ -6,23 +7,14 @@ import { PushPrompt } from "./PushPrompt";
 
 export const dynamic = "force-dynamic";
 
-const STATUS_LABELS: Record<string, string> = {
-  PENDING_PAYMENT: "En attente de paiement",
-  CONFIRMED: "Confirmée",
-  IN_PREP: "En préparation",
-  READY: "Prête — venez la récupérer !",
-  COMPLETED: "Récupérée",
-  CANCELLED: "Annulée",
-  REFUNDED: "Remboursée",
-  NO_SHOW: "Non récupérée",
-};
+const eur = (cents: number) => (cents / 100).toLocaleString("fr-FR", { style: "currency", currency: "EUR" });
 
 export default async function SuiviPage({
   params,
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ t?: string; payment_intent?: string }>;
+  searchParams: Promise<{ t?: string }>;
 }) {
   const { id } = await params;
   const { t } = await searchParams;
@@ -36,44 +28,124 @@ export default async function SuiviPage({
     include: {
       items: { include: { menuItem: true, menuItemSize: true, addedIngredients: { include: { ingredient: true } } } },
       session: { include: { location: true } },
+      timeSlot: true,
     },
   });
   if (!order) notFound();
 
-  const eur = (cents: number) => (cents / 100).toLocaleString("fr-FR", { style: "currency", currency: "EUR" });
-  const timeFmt = new Intl.DateTimeFormat("fr-FR", { weekday: "long", hour: "2-digit", minute: "2-digit" });
+  const timeFmt = new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-digit" });
+  const dayFmt = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long" });
 
   return (
-    <main className="mx-auto max-w-lg w-full px-5 py-10 flex-1">
-      <p className="text-xs tracking-[0.14em] uppercase text-[#a5462d] font-medium">Pizza Basilico</p>
-      <h1 className="text-2xl font-semibold mt-1">Commande #{order.dailyOrderNumber}</h1>
-      <p className="text-[#585a4d] text-sm mb-6">
-        {order.session.location.label} — {timeFmt.format(order.session.startAt)}
-      </p>
+    <main className="relative">
+      <div
+        className="absolute inset-x-0 top-0 h-[340px] -z-10"
+        aria-hidden="true"
+        style={{ background: "radial-gradient(760px 320px at 60% 0%, rgba(255,122,47,0.14), transparent 62%)" }}
+      />
 
-      <StatusView orderId={order.id} initialStatus={order.status} statusLabels={STATUS_LABELS} />
-      <PushPrompt orderId={order.id} />
+      <div className="mx-auto max-w-2xl px-5 lg:px-8 pt-12 md:pt-16 pb-20">
+        <p className="eyebrow">Suivi de commande</p>
+        <div className="flex items-end justify-between gap-4 mt-3">
+          <h1 className="display text-[clamp(2rem,6vw,3.2rem)]">
+            Commande <span className="text-ember tnum">#{order.dailyOrderNumber}</span>
+          </h1>
+        </div>
+        <p className="text-sm text-cream-dim mt-3 capitalize">
+          {order.session.location.label} · {dayFmt.format(order.session.startAt)}
+        </p>
 
-      <section className="rounded-lg border border-[#d9d6c6] bg-white/60 p-5 mt-4">
-        <p className="font-medium mb-2">Retrait au nom de {order.pickupName}</p>
-        <ul className="text-sm text-[#585a4d] flex flex-col gap-1">
-          {order.items.map((it) => (
-            <li key={it.id}>
-              {it.quantity}× {it.menuItem.name} {it.menuItemSize ? `(${it.menuItemSize.label})` : ""}
-              {it.addedIngredients.length > 0 && <> + {it.addedIngredients.map((a) => a.ingredient.name).join(", ")}</>}
-            </li>
-          ))}
-        </ul>
-        {order.note && <p className="text-sm italic text-[#585a4d] mt-2">« {order.note} »</p>}
-        <p className="font-medium mt-3">Total : {eur(order.totalCents)}</p>
-      </section>
+        <div className="card p-5 mt-6 flex items-center justify-between gap-4">
+          <div>
+            <p className="text-[0.65rem] uppercase tracking-[0.18em] text-cream-faint">Créneau de retrait</p>
+            <p className="display text-2xl text-cream tnum mt-1">
+              {timeFmt.format(order.timeSlot.startAt)} – {timeFmt.format(order.timeSlot.endAt)}
+            </p>
+          </div>
+          <div className="text-right">
+            <p className="text-[0.65rem] uppercase tracking-[0.18em] text-cream-faint">Au nom de</p>
+            <p className="display text-xl text-cream mt-1">{order.pickupName}</p>
+          </div>
+        </div>
 
-      <p className="text-sm text-[#585a4d] mt-6">
-        Un souci avec cette commande ?{" "}
-        <a href={`mailto:contact@pizza.mehdi.website?subject=Commande%20%23${order.dailyOrderNumber}`} className="underline text-[#3b5a34]">
-          Signaler un problème
-        </a>
-      </p>
+        <div className="mt-6">
+          <StatusView orderId={order.id} initialStatus={order.status} />
+        </div>
+
+        <PushPrompt orderId={order.id} />
+
+        <section className="card p-5 md:p-6 mt-6">
+          <h2 className="display text-lg mb-4">Le détail</h2>
+          <ul className="flex flex-col gap-2.5 text-sm">
+            {order.items.map((it) => (
+              <li key={it.id} className="flex items-start justify-between gap-4">
+                <span className="min-w-0">
+                  <span className="tnum text-cream-faint">{it.quantity}× </span>
+                  <span className="text-cream">{it.menuItem.name}</span>
+                  {it.menuItemSize && <span className="text-cream-faint"> · {it.menuItemSize.label}</span>}
+                  {it.addedIngredients.length > 0 && (
+                    <span className="block text-[0.75rem] text-ember/80">
+                      + {it.addedIngredients.map((a) => a.ingredient.name).join(", ")}
+                    </span>
+                  )}
+                </span>
+                <span className="tnum text-cream-dim shrink-0">{eur(it.unitPriceCents * it.quantity)}</span>
+              </li>
+            ))}
+          </ul>
+
+          {order.note && (
+            <p className="text-[0.82rem] text-cream-faint italic mt-4 border-l-2 border-line-warm pl-3">
+              « {order.note} »
+            </p>
+          )}
+
+          <div className="hairline my-5" />
+
+          <div className="flex flex-col gap-1.5 text-sm">
+            {order.discountCents > 0 && (
+              <div className="flex justify-between text-basil">
+                <span>Remise</span>
+                <span className="tnum">−{eur(order.discountCents)}</span>
+              </div>
+            )}
+            {order.tipCents > 0 && (
+              <div className="flex justify-between text-cream-dim">
+                <span>Pourboire</span>
+                <span className="tnum">{eur(order.tipCents)}</span>
+              </div>
+            )}
+            <div className="flex justify-between items-baseline">
+              <span className="display text-lg">Total payé</span>
+              <span className="display text-2xl text-ember tnum">{eur(order.totalCents)}</span>
+            </div>
+          </div>
+        </section>
+
+        <div className="flex flex-wrap gap-4 justify-between items-center mt-8 text-sm">
+          <a
+            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.session.location.address)}`}
+            target="_blank"
+            rel="noreferrer"
+            className="btn btn-ghost !py-2.5 !px-5 !text-[0.85rem]"
+          >
+            Itinéraire vers le camion
+          </a>
+          <a
+            href={`mailto:contact@pizza.mehdi.website?subject=${encodeURIComponent(`Problème commande #${order.dailyOrderNumber}`)}`}
+            className="text-cream-faint hover:text-cream-dim transition-colors"
+          >
+            Signaler un problème
+          </a>
+        </div>
+
+        <p className="text-xs text-cream-faint mt-10">
+          Gardez ce lien : il vous donne accès au suivi en direct.{" "}
+          <Link href="/" className="text-ember hover:underline">
+            Retour à l&rsquo;accueil
+          </Link>
+        </p>
+      </div>
     </main>
   );
 }

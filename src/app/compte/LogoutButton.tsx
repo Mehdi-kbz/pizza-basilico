@@ -11,7 +11,7 @@ export function LogoutButton() {
         router.push("/");
         router.refresh();
       }}
-      className="text-xs border border-[#d9d6c6] rounded px-3 py-1.5"
+      className="btn btn-ghost !py-2 !px-4 !text-[0.78rem] shrink-0"
     >
       Se déconnecter
     </button>

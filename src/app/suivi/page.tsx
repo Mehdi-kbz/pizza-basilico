@@ -26,28 +26,59 @@ export default function SuiviLookupPage() {
   }
 
   return (
-    <main className="mx-auto max-w-sm w-full px-5 py-16 flex-1">
-      <p className="text-xs tracking-[0.14em] uppercase text-[#a5462d] font-medium">Pizza Basilico</p>
-      <h1 className="text-xl font-semibold mt-1 mb-6">Suivre ma commande</h1>
-      <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-        <input
-          className="border border-[#d9d6c6] rounded px-3 py-2 text-sm bg-white"
-          placeholder="E-mail utilisé pour la commande"
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-        <input
-          className="border border-[#d9d6c6] rounded px-3 py-2 text-sm bg-white"
-          placeholder="Numéro de commande (ex. 12)"
-          value={numero}
-          onChange={(e) => setNumero(e.target.value)}
-        />
-        {error && <p className="text-[#a5462d] text-sm">{error}</p>}
-        <button disabled={loading} className="bg-[#232017] text-white rounded py-2.5 font-medium disabled:opacity-50">
-          {loading ? "…" : "Retrouver ma commande"}
-        </button>
-      </form>
+    <main className="relative">
+      <div
+        className="absolute inset-x-0 top-0 h-[320px] -z-10"
+        aria-hidden="true"
+        style={{ background: "radial-gradient(700px 300px at 55% 0%, rgba(255,122,47,0.12), transparent 62%)" }}
+      />
+
+      <div className="mx-auto max-w-md px-5 lg:px-8 pt-16 md:pt-24 pb-24">
+        <p className="eyebrow">Suivi</p>
+        <h1 className="display text-[clamp(2rem,6vw,3rem)] mt-3">Retrouver ma commande</h1>
+        <p className="text-sm text-cream-dim mt-4 leading-relaxed">
+          Le lien de suivi vous a été envoyé par e-mail. Si vous ne le retrouvez pas, indiquez
+          simplement votre adresse et le numéro de commande.
+        </p>
+
+        <form onSubmit={handleSubmit} className="card p-6 mt-8 flex flex-col gap-4">
+          <div>
+            <label htmlFor="track-email" className="block text-xs text-cream-dim mb-1.5">
+              E-mail utilisé pour la commande
+            </label>
+            <input
+              id="track-email"
+              type="email"
+              required
+              className="field"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="vous@exemple.fr"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="track-number" className="block text-xs text-cream-dim mb-1.5">
+              Numéro de commande
+            </label>
+            <input
+              id="track-number"
+              required
+              inputMode="numeric"
+              className="field tnum"
+              value={numero}
+              onChange={(e) => setNumero(e.target.value)}
+              placeholder="12"
+            />
+          </div>
+
+          {error && <p className="text-tomato text-sm border-l-2 border-tomato pl-3">{error}</p>}
+
+          <button disabled={loading} className="btn btn-primary mt-1">
+            {loading ? "Recherche…" : "Retrouver ma commande"}
+          </button>
+        </form>
+      </div>
     </main>
   );
 }

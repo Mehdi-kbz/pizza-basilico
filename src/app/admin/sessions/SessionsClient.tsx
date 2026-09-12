@@ -121,13 +121,13 @@ export function SessionsClient() {
 
   return (
     <div className="flex flex-col gap-8">
-      <form onSubmit={handleSubmit} className="rounded-lg border border-[#d9d6c6] bg-white/60 p-5 flex flex-col gap-3">
+      <form onSubmit={handleSubmit} className="rounded-lg border border-line bg-char p-5 flex flex-col gap-3">
         <h2 className="font-semibold">Nouvelle session</h2>
 
         <select
           value={locationId}
           onChange={(e) => setLocationId(e.target.value)}
-          className="border border-[#d9d6c6] rounded px-3 py-2 text-sm bg-white"
+          className="field"
         >
           {locations.map((l) => (
             <option key={l.id} value={l.id}>
@@ -140,13 +140,13 @@ export function SessionsClient() {
         {locationId === "__new__" && (
           <div className="grid gap-2">
             <input
-              className="border border-[#d9d6c6] rounded px-3 py-2 text-sm bg-white"
+              className="field"
               placeholder="Nom (ex. Place de la Mairie)"
               value={newLabel}
               onChange={(e) => setNewLabel(e.target.value)}
             />
             <input
-              className="border border-[#d9d6c6] rounded px-3 py-2 text-sm bg-white"
+              className="field"
               placeholder="Adresse complète"
               value={newAddress}
               onChange={(e) => setNewAddress(e.target.value)}
@@ -155,62 +155,62 @@ export function SessionsClient() {
         )}
 
         <div className="grid grid-cols-2 gap-2">
-          <label className="text-xs text-[#585a4d]">
+          <label className="text-xs text-cream-dim">
             Début
             <input
               type="datetime-local"
               value={startAt}
               onChange={(e) => setStartAt(e.target.value)}
-              className="border border-[#d9d6c6] rounded px-3 py-2 text-sm bg-white w-full mt-1"
+              className="field w-full mt-1"
             />
           </label>
-          <label className="text-xs text-[#585a4d]">
+          <label className="text-xs text-cream-dim">
             Fin
             <input
               type="datetime-local"
               value={endAt}
               onChange={(e) => setEndAt(e.target.value)}
-              className="border border-[#d9d6c6] rounded px-3 py-2 text-sm bg-white w-full mt-1"
+              className="field w-full mt-1"
             />
           </label>
         </div>
 
         <div className="grid grid-cols-3 gap-2">
-          <label className="text-xs text-[#585a4d]">
+          <label className="text-xs text-cream-dim">
             Fenêtre (min)
             <input
               type="number"
               min={1}
               value={windowMinutes}
               onChange={(e) => setWindowMinutes(Number(e.target.value))}
-              className="border border-[#d9d6c6] rounded px-3 py-2 text-sm bg-white w-full mt-1"
+              className="field w-full mt-1"
             />
           </label>
-          <label className="text-xs text-[#585a4d]">
+          <label className="text-xs text-cream-dim">
             Pizzas / fenêtre
             <input
               type="number"
               min={1}
               value={unitsCap}
               onChange={(e) => setUnitsCap(Number(e.target.value))}
-              className="border border-[#d9d6c6] rounded px-3 py-2 text-sm bg-white w-full mt-1"
+              className="field w-full mt-1"
             />
           </label>
-          <label className="text-xs text-[#585a4d]">
+          <label className="text-xs text-cream-dim">
             Commandes / fenêtre
             <input
               type="number"
               min={1}
               value={ordersCap}
               onChange={(e) => setOrdersCap(Number(e.target.value))}
-              className="border border-[#d9d6c6] rounded px-3 py-2 text-sm bg-white w-full mt-1"
+              className="field w-full mt-1"
             />
           </label>
         </div>
 
-        {error && <p className="text-[#a5462d] text-sm">{error}</p>}
+        {error && <p className="text-tomato text-sm">{error}</p>}
 
-        <button disabled={submitting} className="bg-[#3b5a34] text-white rounded py-2.5 font-medium disabled:opacity-50">
+        <button disabled={submitting} className="btn btn-primary">
           {submitting ? "…" : "Publier la session"}
         </button>
       </form>
@@ -219,10 +219,10 @@ export function SessionsClient() {
         <h2 className="font-semibold mb-3">Sessions à venir / en cours</h2>
         <ul className="flex flex-col gap-2">
           {sessions.map((s) => (
-            <li key={s.id} className="flex items-center justify-between border border-[#d9d6c6] rounded p-3 bg-white/60 text-sm">
+            <li key={s.id} className="flex items-center justify-between border border-line rounded p-3 bg-char text-sm">
               <div>
                 <p className="font-medium">{s.location.label}</p>
-                <p className="text-[#585a4d]">
+                <p className="text-cream-dim">
                   {new Date(s.startAt).toLocaleString("fr-FR")} – {new Date(s.endAt).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
                   {" · "}
                   {s.unitsCapPerWindow} pizzas / {s.windowMinutes} min
@@ -231,7 +231,7 @@ export function SessionsClient() {
               <button
                 onClick={() => toggleOrdering(s.id, !s.isOrderingOpen)}
                 className={`text-xs rounded px-2.5 py-1.5 border ${
-                  s.isOrderingOpen ? "border-[#d9d6c6]" : "border-[#a5462d] bg-[#a5462d] text-white"
+                  s.isOrderingOpen ? "border-line" : "border-tomato bg-tomato text-cream"
                 }`}
               >
                 {s.isOrderingOpen ? "Fermer les commandes" : "Rouvrir les commandes"}

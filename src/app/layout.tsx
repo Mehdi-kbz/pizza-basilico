@@ -1,41 +1,50 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Bodoni_Moda, Manrope } from "next/font/google";
 import "./globals.css";
 import { ServiceWorkerRegister } from "./ServiceWorkerRegister";
+import { SiteHeader } from "@/components/SiteHeader";
+import { SiteFooter } from "@/components/SiteFooter";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const bodoni = Bodoni_Moda({
+  variable: "--font-bodoni",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  style: ["normal", "italic"],
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const manrope = Manrope({
+  variable: "--font-manrope",
   subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "Pizza Basilico",
-  description: "Pizzas artisanales au feu de bois — commande en ligne, retrait au camion.",
+  title: "Pizza Basilico — Pizzas artisanales au feu de bois",
+  description:
+    "Food truck de pizzas artisanales cuites au feu de bois. Commandez à l'avance, retirez au camion — sans file d'attente.",
   manifest: "/manifest.json",
-  appleWebApp: { capable: true, statusBarStyle: "default", title: "Pizza Basilico" },
-  icons: {
-    icon: "/icons/icon-192.png",
-    apple: "/icons/apple-touch-icon.png",
+  appleWebApp: { capable: true, statusBarStyle: "black-translucent", title: "Pizza Basilico" },
+  icons: { icon: "/icons/icon-192.png", apple: "/icons/apple-touch-icon.png" },
+  openGraph: {
+    title: "Pizza Basilico — Pizzas artisanales au feu de bois",
+    description: "Commandez à l'avance, retirez au camion. Pâte maison, four à bois.",
+    type: "website",
   },
 };
 
 export const viewport = {
-  themeColor: "#3b5a34",
+  themeColor: "#0f0b09",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html
-      lang="fr"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col bg-[#F6F3EA] text-[#232017]">
-        {children}
+    <html lang="fr" className={`${bodoni.variable} ${manrope.variable} h-full`}>
+      <body className="min-h-full flex flex-col overflow-x-hidden">
+        <SiteHeader />
+        <div className="flex-1 flex flex-col">{children}</div>
+        <SiteFooter />
         <ServiceWorkerRegister />
       </body>
     </html>

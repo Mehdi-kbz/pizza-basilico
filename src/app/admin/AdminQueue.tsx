@@ -136,12 +136,12 @@ export function AdminQueue({ sessions }: { sessions: { id: string; label: string
           {pendingAlerts.map((o) => (
             <div
               key={o.id}
-              className="flex items-center justify-between rounded-lg border-2 border-[#a5462d] bg-[#f6dfd6] px-4 py-3 animate-pulse"
+              className="flex items-center justify-between rounded-lg border-2 border-tomato bg-flame/12 px-4 py-3 animate-pulse"
             >
-              <p className="font-semibold text-[#7a3320]">🔔 Nouvelle commande #{o.dailyOrderNumber} — {o.pickupName}</p>
+              <p className="font-semibold text-ember">🔔 Nouvelle commande #{o.dailyOrderNumber} — {o.pickupName}</p>
               <button
                 onClick={() => acknowledgeAlert(o.id)}
-                className="text-xs bg-[#a5462d] text-white rounded px-3 py-1.5 font-medium"
+                className="text-xs bg-tomato text-cream rounded px-3 py-1.5 font-medium"
               >
                 Vu
               </button>
@@ -153,7 +153,7 @@ export function AdminQueue({ sessions }: { sessions: { id: string; label: string
       <select
         value={sessionId}
         onChange={(e) => setSessionId(e.target.value)}
-        className="border border-[#d9d6c6] rounded px-3 py-2 text-sm bg-white mb-6"
+        className="field mb-6"
       >
         {sessions.map((s) => (
           <option key={s.id} value={s.id}>
@@ -164,33 +164,33 @@ export function AdminQueue({ sessions }: { sessions: { id: string; label: string
 
       <div className="flex flex-col gap-6">
         {slots.map((slot) => (
-          <section key={slot.id} className="rounded-lg border border-[#d9d6c6] bg-white/60 p-4">
+          <section key={slot.id} className="rounded-lg border border-line bg-char p-4">
             <div className="flex justify-between items-center mb-3">
               <p className="font-medium">
                 {timeFmt(slot.startAt)} – {timeFmt(slot.endAt)}
               </p>
-              <p className="text-xs text-[#585a4d]">
+              <p className="text-xs text-cream-dim">
                 {slot.unitsCommitted}/{slot.unitsCap} unités · {slot.ordersCommitted}/{slot.ordersCap} commandes
               </p>
             </div>
 
             {slot.orders.length === 0 ? (
-              <p className="text-sm text-[#585a4d]">Aucune commande.</p>
+              <p className="text-sm text-cream-dim">Aucune commande.</p>
             ) : (
               <ul className="flex flex-col gap-2">
                 {slot.orders.map((o) => (
-                  <li key={o.id} className="border border-[#d9d6c6] rounded p-3 bg-white">
+                  <li key={o.id} className="border border-line rounded p-3 bg-ash-2">
                     <div className="flex justify-between items-start gap-2">
                       <div>
                         <p className="font-medium">
                           #{o.dailyOrderNumber} — {o.pickupName}
                           {o.flaggedLarge && (
-                            <span className="ml-2 text-xs text-[#a5462d] border border-[#c98572] rounded px-1.5 py-0.5">
+                            <span className="ml-2 text-xs text-tomato border border-tomato/60 rounded px-1.5 py-0.5">
                               commande volumineuse
                             </span>
                           )}
                         </p>
-                        <ul className="text-sm text-[#585a4d]">
+                        <ul className="text-sm text-cream-dim">
                           {o.items.map((it, idx) => (
                             <li key={idx}>
                               {it.quantity}× {it.menuItem.name} {it.menuItemSize ? `(${it.menuItemSize.label})` : ""}
@@ -200,11 +200,11 @@ export function AdminQueue({ sessions }: { sessions: { id: string; label: string
                             </li>
                           ))}
                         </ul>
-                        {o.note && <p className="text-xs italic text-[#585a4d] mt-1">« {o.note} »</p>}
+                        {o.note && <p className="text-xs italic text-cream-dim mt-1">« {o.note} »</p>}
                       </div>
                       <div className="text-right shrink-0">
                         <p className="text-sm font-medium">{eur(o.totalCents)}</p>
-                        <p className="text-xs text-[#585a4d]">{STATUS_LABELS[o.status] ?? o.status}</p>
+                        <p className="text-xs text-cream-dim">{STATUS_LABELS[o.status] ?? o.status}</p>
                       </div>
                     </div>
 
@@ -212,7 +212,7 @@ export function AdminQueue({ sessions }: { sessions: { id: string; label: string
                       {NEXT_STATUS[o.status] && (
                         <button
                           onClick={() => setStatus(o.id, NEXT_STATUS[o.status]!)}
-                          className="text-xs bg-[#3b5a34] text-white rounded px-2.5 py-1"
+                          className="text-xs bg-basil-deep text-cream rounded px-2.5 py-1"
                         >
                           Marquer « {STATUS_LABELS[NEXT_STATUS[o.status]!]} »
                         </button>
@@ -220,7 +220,7 @@ export function AdminQueue({ sessions }: { sessions: { id: string; label: string
                       {o.status === "READY" && (
                         <button
                           onClick={() => setStatus(o.id, "NO_SHOW")}
-                          className="text-xs border border-[#d9d6c6] rounded px-2.5 py-1"
+                          className="text-xs border border-line rounded px-2.5 py-1"
                         >
                           Non récupérée
                         </button>
@@ -228,7 +228,7 @@ export function AdminQueue({ sessions }: { sessions: { id: string; label: string
                       {o.status !== "CANCELLED" && o.status !== "COMPLETED" && (
                         <button
                           onClick={() => setStatus(o.id, "CANCELLED")}
-                          className="text-xs text-[#a5462d] border border-[#c98572] rounded px-2.5 py-1"
+                          className="text-xs text-tomato border border-tomato/60 rounded px-2.5 py-1"
                         >
                           Annuler / rembourser
                         </button>

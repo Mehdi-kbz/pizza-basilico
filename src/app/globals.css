@@ -1,26 +1,250 @@
 @import "tailwindcss";
 
+/* ---------------------------------------------------------------------------
+   Pizza Basilico — direction artistique
+   Un four à bois la nuit : noirs charbonneux, lueur de braise, basilic frais,
+   laiton pour le palmarès. Parti pris assumé d'un seul univers sombre.
+   --------------------------------------------------------------------------- */
+
+@theme {
+  --color-ink: #0f0b09;
+  --color-char: #171210;
+  --color-ash: #221b17;
+  --color-ash-2: #2c231d;
+  --color-line: #352a23;
+  --color-line-warm: #4a3729;
+
+  --color-cream: #f6efe3;
+  --color-cream-dim: #b9ab9a;
+  --color-cream-faint: #7d7268;
+
+  --color-flame: #ff7a2f;
+  --color-flame-deep: #d9541a;
+  --color-ember: #ffb066;
+  --color-basil: #82b154;
+  --color-basil-deep: #4a7334;
+  --color-tomato: #cf4234;
+  --color-brass: #d9ad5f;
+
+  --font-display: var(--font-bodoni), Georgia, serif;
+  --font-body: var(--font-manrope), system-ui, sans-serif;
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: dark;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+html {
+  scroll-behavior: smooth;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-ink);
+  color: var(--color-cream);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--color-flame-deep);
+  color: var(--color-cream);
+}
+
+/* Grain très léger sur toute la page : évite l'aspect "aplat numérique" */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* --------------------------------- Type --------------------------------- */
+
+.display {
+  font-family: var(--font-display);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 0.98;
+  text-wrap: balance;
+}
+
+.eyebrow {
+  font-size: 0.7rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--color-ember);
+  font-weight: 600;
+}
+
+.lede {
+  font-size: 1.05rem;
+  line-height: 1.65;
+  color: var(--color-cream-dim);
+  max-width: 54ch;
+}
+
+/* ------------------------------ Composants ------------------------------ */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.85rem 1.6rem;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 0.92rem;
+  letter-spacing: 0.01em;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease,
+    border-color 0.18s ease, color 0.18s ease;
+  cursor: pointer;
+  text-decoration: none;
+  border: 1px solid transparent;
+}
+
+.btn-primary {
+  background: linear-gradient(180deg, var(--color-flame) 0%, var(--color-flame-deep) 100%);
+  color: #1a0d05;
+  box-shadow: 0 8px 28px -10px rgba(255, 122, 47, 0.65), inset 0 1px 0 rgba(255, 220, 190, 0.35);
+}
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 38px -10px rgba(255, 122, 47, 0.8), inset 0 1px 0 rgba(255, 220, 190, 0.5);
+}
+
+.btn-ghost {
+  border-color: var(--color-line-warm);
+  color: var(--color-cream);
+  background: rgba(246, 239, 227, 0.02);
+}
+.btn-ghost:hover {
+  border-color: var(--color-ember);
+  color: var(--color-ember);
+  transform: translateY(-2px);
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.card {
+  background: linear-gradient(165deg, var(--color-ash) 0%, var(--color-char) 100%);
+  border: 1px solid var(--color-line);
+  border-radius: 14px;
+}
+
+.field {
+  width: 100%;
+  background: rgba(15, 11, 9, 0.6);
+  border: 1px solid var(--color-line);
+  border-radius: 10px;
+  padding: 0.75rem 0.95rem;
+  color: var(--color-cream);
+  font-size: 0.95rem;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease;
+}
+.field::placeholder {
+  color: var(--color-cream-faint);
+}
+.field:focus {
+  outline: none;
+  border-color: var(--color-flame);
+  box-shadow: 0 0 0 3px rgba(255, 122, 47, 0.16);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border: 1px solid var(--color-line-warm);
+  color: var(--color-cream-dim);
+  white-space: nowrap;
+}
+.chip-flame {
+  border-color: rgba(255, 122, 47, 0.45);
+  color: var(--color-ember);
+  background: rgba(255, 122, 47, 0.08);
+}
+.chip-basil {
+  border-color: rgba(130, 177, 84, 0.4);
+  color: var(--color-basil);
+  background: rgba(130, 177, 84, 0.08);
+}
+.chip-brass {
+  border-color: rgba(217, 173, 95, 0.45);
+  color: var(--color-brass);
+  background: rgba(217, 173, 95, 0.08);
+}
+
+/* Focus clavier visible partout */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible {
+  outline: 2px solid var(--color-ember);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* Lueur de braise réutilisable derrière les éléments chauds */
+.ember-glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(70px);
+  pointer-events: none;
+  background: radial-gradient(circle, rgba(255, 122, 47, 0.42) 0%, rgba(217, 84, 26, 0.12) 45%, transparent 72%);
+}
+
+.hairline {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--color-line-warm) 18%, var(--color-line-warm) 82%, transparent);
+}
+
+/* Apparition douce depuis un état déjà lisible (jamais parqué en opacity 0) */
+@keyframes rise {
+  from {
+    opacity: 0.35;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.rise {
+  animation: rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.rise-1 { animation-delay: 0.06s; }
+.rise-2 { animation-delay: 0.14s; }
+.rise-3 { animation-delay: 0.22s; }
+.rise-4 { animation-delay: 0.3s; }
+
+.tnum {
+  font-variant-numeric: tabular-nums;
 }

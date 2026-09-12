@@ -104,10 +104,10 @@ export function WalkupClient({
 
   if (success) {
     return (
-      <div className="rounded-lg border border-[#3b5a34] bg-[#e4e9dc] p-6 text-center">
-        <p className="text-2xl font-semibold text-[#2c4527]">Commande #{success.dailyOrderNumber} enregistrée</p>
-        <p className="text-[#585a4d] mt-1">{eur(success.totalCents)} — encaisser via le terminal/espèces</p>
-        <button onClick={() => setSuccess(null)} className="mt-4 bg-[#232017] text-white rounded px-4 py-2 text-sm">
+      <div className="rounded-lg border border-basil bg-basil/10 p-6 text-center">
+        <p className="text-2xl font-semibold text-basil">Commande #{success.dailyOrderNumber} enregistrée</p>
+        <p className="text-cream-dim mt-1">{eur(success.totalCents)} — encaisser via le terminal/espèces</p>
+        <button onClick={() => setSuccess(null)} className="btn btn-ghost mt-4">
           Nouvelle commande
         </button>
       </div>
@@ -119,7 +119,7 @@ export function WalkupClient({
       <select
         value={sessionId}
         onChange={(e) => setSessionId(e.target.value)}
-        className="border border-[#d9d6c6] rounded px-3 py-2 text-sm bg-white"
+        className="field"
       >
         {sessions.map((s) => (
           <option key={s.id} value={s.id}>
@@ -130,14 +130,14 @@ export function WalkupClient({
 
       {categories.map((cat) => (
         <section key={cat.id}>
-          <h2 className="text-sm font-medium text-[#585a4d] mb-2">{cat.name}</h2>
+          <h2 className="text-sm font-medium text-cream-dim mb-2">{cat.name}</h2>
           <div className="flex flex-wrap gap-2">
             {cat.items.map((item) =>
               item.sizes.map((size) => (
                 <button
                   key={size.id}
                   onClick={() => addToCart(item, size, [])}
-                  className="text-sm border border-[#d9d6c6] rounded px-3 py-1.5 bg-white/60 hover:border-[#3b5a34]"
+                  className="text-sm border border-line rounded px-3 py-1.5 bg-char hover:border-basil"
                 >
                   {item.name} {item.sizes.length > 1 ? `(${size.label})` : ""} — {eur(size.priceCents)}
                 </button>
@@ -147,10 +147,10 @@ export function WalkupClient({
         </section>
       ))}
 
-      <section className="rounded-lg border border-[#d9d6c6] bg-white/70 p-5">
+      <section className="rounded-lg border border-line bg-char p-5">
         <h2 className="font-semibold mb-3">Panier</h2>
         {cart.length === 0 ? (
-          <p className="text-sm text-[#585a4d]">Vide.</p>
+          <p className="text-sm text-cream-dim">Vide.</p>
         ) : (
           <ul className="flex flex-col gap-1 mb-3 text-sm">
             {cart.map((l) => (
@@ -158,7 +158,7 @@ export function WalkupClient({
                 <span>{l.menuItemName} ({l.sizeLabel})</span>
                 <span className="flex gap-2">
                   {eur(l.unitPriceCents)}
-                  <button onClick={() => setCart((prev) => prev.filter((x) => x.key !== l.key))} className="text-[#a5462d] underline text-xs">
+                  <button onClick={() => setCart((prev) => prev.filter((x) => x.key !== l.key))} className="text-tomato underline text-xs">
                     retirer
                   </button>
                 </span>
@@ -169,18 +169,18 @@ export function WalkupClient({
 
         <div className="grid gap-2 mb-3">
           <input
-            className="border border-[#d9d6c6] rounded px-3 py-2 text-sm bg-white"
+            className="field"
             placeholder="Nom pour le retrait"
             value={pickupName}
             onChange={(e) => setPickupName(e.target.value)}
           />
           <input
-            className="border border-[#d9d6c6] rounded px-3 py-2 text-sm bg-white"
+            className="field"
             placeholder="E-mail (facultatif — pour la fidélité)"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
-          <label className="text-xs flex items-center gap-2 text-[#585a4d]">
+          <label className="text-xs flex items-center gap-2 text-cream-dim">
             <input type="checkbox" checked={override} onChange={(e) => setOverride(e.target.checked)} />
             Forcer même si le créneau affiche complet (je sais qu&rsquo;il y a de la marge)
           </label>
@@ -190,8 +190,8 @@ export function WalkupClient({
           <span>Total</span>
           <span>{eur(total)}</span>
         </div>
-        {error && <p className="text-[#a5462d] text-sm mb-2">{error}</p>}
-        <button disabled={submitting} onClick={handleSubmit} className="w-full bg-[#3b5a34] text-white rounded py-2.5 font-medium disabled:opacity-50">
+        {error && <p className="text-tomato text-sm mb-2">{error}</p>}
+        <button disabled={submitting} onClick={handleSubmit} className="btn btn-primary w-full">
           {submitting ? "…" : "Valider (payé en personne)"}
         </button>
       </section>

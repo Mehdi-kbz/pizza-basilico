@@ -4,7 +4,7 @@ import { useState } from "react";
 
 export function NewsletterForm() {
   const [email, setEmail] = useState("");
-  const [status, setStatus] = useState<"idle" | "sending" | "done">("idle");
+  const [status, setStatus] = useState<"idle" | "sending" | "done" | "error">("idle");
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -14,29 +14,35 @@ export function NewsletterForm() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email }),
     });
-    setStatus(res.ok ? "done" : "idle");
+    setStatus(res.ok ? "done" : "error");
   }
 
   if (status === "done") {
-    return <p className="text-sm text-[#3b5a34]">Merci, vous êtes inscrit·e !</p>;
+    return (
+      <p className="text-basil text-sm flex items-center gap-2">
+        <span aria-hidden="true">✓</span> C&rsquo;est noté — on vous écrit avant le prochain service.
+      </p>
+    );
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex gap-2 max-w-sm">
+    <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-2.5 max-w-md">
+      <label htmlFor="newsletter-email" className="sr-only">
+        Votre adresse e-mail
+      </label>
       <input
+        id="newsletter-email"
         type="email"
         required
-        placeholder="Votre e-mail"
+        placeholder="vous@exemple.fr"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
-        className="border border-[#d9d6c6] rounded px-3 py-2 text-sm bg-white flex-1"
+        className="field flex-1"
       />
-      <button
-        disabled={status === "sending"}
-        className="bg-[#232017] text-white rounded px-3 py-2 text-sm disabled:opacity-50"
-      >
-        S&rsquo;inscrire
+      <button disabled={status === "sending"} className="btn btn-primary whitespace-nowrap">
+        {status === "sending" ? "…" : "Je m'inscris"}
       </button>
+      {status === "error" && <p className="text-tomato text-sm">Échec de l&rsquo;inscription, réessayez.</p>}
     </form>
   );
 }

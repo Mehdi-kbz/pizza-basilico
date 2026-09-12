@@ -10,27 +10,30 @@ function urlBase64ToUint8Array(base64String: string) {
   return Uint8Array.from([...raw].map((c) => c.charCodeAt(0)));
 }
 
-/** Proposé sur la page de suivi — juste après la première commande réussie,
- * pas à la première visite (§11.4, meilleur taux d'acceptation). */
+/** Proposé après la commande, pas à la première visite (§11.4). */
 export function PushPrompt({ orderId }: { orderId: string }) {
   const searchParams = useSearchParams();
   const token = searchParams.get("t");
-  const [state, setState] = useState<"idle" | "asking" | "done" | "denied" | "unsupported">("idle");
+  const [state, setState] = useState<"idle" | "asking" | "done" | "hidden">("idle");
   const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
 
-  if (!vapidKey || state === "done" || state === "denied") return null;
+  if (!vapidKey || state === "hidden") return null;
+
+  if (state === "done") {
+    return (
+      <p className="text-sm text-basil mt-6 flex items-center gap-2">
+        <span aria-hidden="true">✓</span> Notifications activées — on vous prévient dès que c&rsquo;est prêt.
+      </p>
+    );
+  }
 
   async function subscribe() {
     setState("asking");
-    if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
-      setState("unsupported");
-      return;
-    }
+    if (!("serviceWorker" in navigator) || !("PushManager" in window)) return setState("hidden");
+
     const permission = await Notification.requestPermission();
-    if (permission !== "granted") {
-      setState("denied");
-      return;
-    }
+    if (permission !== "granted") return setState("hidden");
+
     const registration = await navigator.serviceWorker.ready;
     const subscription = await registration.pushManager.subscribe({
       userVisibleOnly: true,
@@ -45,10 +48,15 @@ export function PushPrompt({ orderId }: { orderId: string }) {
   }
 
   return (
-    <div className="rounded-lg border border-[#d9d6c6] bg-white/60 p-4 mt-4 text-sm flex items-center justify-between gap-3">
-      <span>Être prévenu·e dès que la commande est prête, sans SMS ?</span>
-      <button onClick={subscribe} disabled={state === "asking"} className="shrink-0 bg-[#3b5a34] text-white rounded px-3 py-1.5 text-xs disabled:opacity-50">
-        Activer
+    <div className="card p-5 mt-6 flex flex-wrap items-center justify-between gap-4">
+      <div>
+        <p className="text-cream text-[0.92rem] font-semibold">Être prévenu·e sans surveiller l&rsquo;écran</p>
+        <p className="text-[0.8rem] text-cream-dim mt-1">
+          Une notification dès que votre pizza sort du four. Pas de SMS, pas de numéro à donner.
+        </p>
+      </div>
+      <button onClick={subscribe} disabled={state === "asking"} className="btn btn-ghost !py-2.5 !px-5 !text-[0.85rem]">
+        {state === "asking" ? "…" : "Activer"}
       </button>
     </div>
   );

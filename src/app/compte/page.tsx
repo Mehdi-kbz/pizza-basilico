@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getCustomerSession } from "@/lib/require-customer";
 import { getLoyaltyStatus, STAMPS_REQUIRED_FOR_FREE_ITEM } from "@/lib/loyalty";
@@ -6,10 +7,12 @@ import { LogoutButton } from "./LogoutButton";
 
 export const dynamic = "force-dynamic";
 
+const eur = (cents: number) => (cents / 100).toLocaleString("fr-FR", { style: "currency", currency: "EUR" });
+
 const STATUS_LABELS: Record<string, string> = {
   PENDING_PAYMENT: "En attente de paiement",
   CONFIRMED: "Confirmée",
-  IN_PREP: "En préparation",
+  IN_PREP: "Au four",
   READY: "Prête",
   COMPLETED: "Récupérée",
   CANCELLED: "Annulée",
@@ -26,55 +29,124 @@ export default async function ComptePage() {
       where: { customerId: session.sub },
       orderBy: { createdAt: "desc" },
       take: 20,
-      include: { session: { include: { location: true } }, items: { include: { menuItem: true, menuItemSize: true } } },
+      include: { session: { include: { location: true } }, items: { include: { menuItem: true } } },
     }),
     getLoyaltyStatus(session.email),
   ]);
 
-  const eur = (cents: number) => (cents / 100).toLocaleString("fr-FR", { style: "currency", currency: "EUR" });
+  const stamps = Array.from({ length: STAMPS_REQUIRED_FOR_FREE_ITEM }, (_, i) => i < loyalty.stampCount);
 
   return (
-    <main className="mx-auto max-w-2xl w-full px-5 py-8 flex-1">
-      <header className="mb-6 flex items-center justify-between">
-        <div>
-          <p className="text-xs tracking-[0.14em] uppercase text-[#a5462d] font-medium">Pizza Basilico</p>
-          <h1 className="text-2xl font-semibold mt-1">Mon compte</h1>
-          <p className="text-[#585a4d] text-sm">{session.email}</p>
+    <main className="relative">
+      <div
+        className="absolute inset-x-0 top-0 h-[340px] -z-10"
+        aria-hidden="true"
+        style={{ background: "radial-gradient(760px 320px at 62% 0%, rgba(255,122,47,0.12), transparent 62%)" }}
+      />
+
+      <div className="mx-auto max-w-3xl px-5 lg:px-8 pt-12 md:pt-16 pb-24">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="eyebrow">Mon compte</p>
+            <h1 className="display text-[clamp(2rem,5.5vw,3rem)] mt-3">Bonjour 👋</h1>
+            <p className="text-sm text-cream-dim mt-2">{session.email}</p>
+          </div>
+          <LogoutButton />
         </div>
-        <LogoutButton />
-      </header>
 
-      <section className="rounded-lg border border-[#3b5a34] bg-[#e4e9dc] p-5 mb-6">
-        <p className="font-medium text-[#2c4527]">
-          {loyalty.eligibleForFreeItem
-            ? "🎉 Vous avez une pizza offerte disponible !"
-            : `${loyalty.stampCount} tampon${loyalty.stampCount > 1 ? "s" : ""} — encore ${loyalty.stampsUntilFree} pour une pizza offerte (sur ${STAMPS_REQUIRED_FOR_FREE_ITEM})`}
-        </p>
-      </section>
+        {/* Carte de fidélité */}
+        <section className="card p-6 md:p-7 mt-9 relative overflow-hidden">
+          <div className="ember-glow w-[300px] h-[300px] -bottom-40 -right-20 opacity-70" aria-hidden="true" />
+          <div className="relative">
+            <div className="flex items-baseline justify-between gap-4">
+              <h2 className="display text-xl">Carte de fidélité</h2>
+              <span className="chip chip-brass tnum">
+                {loyalty.stampCount}/{STAMPS_REQUIRED_FOR_FREE_ITEM}
+              </span>
+            </div>
 
-      <h2 className="font-semibold mb-3">Historique de commandes</h2>
-      {orders.length === 0 ? (
-        <p className="text-[#585a4d] text-sm">Aucune commande pour le moment.</p>
-      ) : (
-        <ul className="flex flex-col gap-2">
-          {orders.map((o) => (
-            <li key={o.id} className="rounded-lg border border-[#d9d6c6] bg-white/60 p-4 text-sm">
-              <div className="flex justify-between">
-                <span className="font-medium">
-                  #{o.dailyOrderNumber} — {o.session.location.label}
+            <div className="flex flex-wrap gap-2.5 mt-5">
+              {stamps.map((filled, i) => (
+                <span
+                  key={i}
+                  aria-hidden="true"
+                  className={`w-9 h-9 rounded-full border grid place-items-center text-xs transition-all ${
+                    filled
+                      ? "border-flame bg-flame/18 text-ember shadow-[0_0_16px_-4px_rgba(255,122,47,0.6)]"
+                      : "border-line text-line-warm"
+                  }`}
+                >
+                  {filled ? "🍕" : i + 1}
                 </span>
-                <span>{eur(o.totalCents)}</span>
-              </div>
-              <p className="text-[#585a4d] text-xs mt-0.5">
-                {new Date(o.createdAt).toLocaleDateString("fr-FR")} — {STATUS_LABELS[o.status] ?? o.status}
-              </p>
-              <p className="text-[#585a4d] mt-1">
-                {o.items.map((i) => `${i.quantity}× ${i.menuItem.name}`).join(", ")}
-              </p>
-            </li>
-          ))}
-        </ul>
-      )}
+              ))}
+              <span
+                className={`w-9 h-9 rounded-full border grid place-items-center text-[0.6rem] font-bold uppercase ${
+                  loyalty.eligibleForFreeItem
+                    ? "border-brass bg-brass/20 text-brass animate-pulse"
+                    : "border-dashed border-line text-line-warm"
+                }`}
+                aria-hidden="true"
+              >
+                Free
+              </span>
+            </div>
+
+            <p className="text-sm mt-5 leading-relaxed">
+              {loyalty.eligibleForFreeItem ? (
+                <span className="text-brass">
+                  <strong>Une pizza offerte vous attend.</strong> Cochez la case au moment de votre
+                  prochaine commande pour l&rsquo;utiliser.
+                </span>
+              ) : (
+                <span className="text-cream-dim">
+                  Encore <strong className="text-cream tnum">{loyalty.stampsUntilFree}</strong> pizza(s)
+                  et la suivante est offerte. Un tampon par pizza ou panuozzo commandé.
+                </span>
+              )}
+            </p>
+          </div>
+        </section>
+
+        {/* Historique */}
+        <section className="mt-12">
+          <div className="flex items-center gap-4 mb-5">
+            <h2 className="display text-xl whitespace-nowrap">Mes commandes</h2>
+            <span className="hairline flex-1" />
+          </div>
+
+          {orders.length === 0 ? (
+            <div className="card p-7 text-center">
+              <p className="text-cream-dim">Aucune commande pour le moment.</p>
+              <Link href="/carte" className="btn btn-primary mt-5">
+                Découvrir la carte
+              </Link>
+            </div>
+          ) : (
+            <ul className="flex flex-col gap-2.5">
+              {orders.map((o) => (
+                <li key={o.id} className="card p-5">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <p className="text-cream">
+                        <span className="tnum text-ember font-semibold">#{o.dailyOrderNumber}</span>{" "}
+                        · {o.session.location.label}
+                      </p>
+                      <p className="text-[0.8rem] text-cream-faint mt-1 tnum">
+                        {new Date(o.createdAt).toLocaleDateString("fr-FR")} ·{" "}
+                        {STATUS_LABELS[o.status] ?? o.status}
+                      </p>
+                      <p className="text-[0.82rem] text-cream-dim mt-2">
+                        {o.items.map((i) => `${i.quantity}× ${i.menuItem.name}`).join(", ")}
+                      </p>
+                    </div>
+                    <span className="tnum text-cream shrink-0">{eur(o.totalCents)}</span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </div>
     </main>
   );
 }

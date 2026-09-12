@@ -57,7 +57,7 @@ export function MenuAvailabilityClient() {
               key={ing.id}
               onClick={() => toggle("ingredient", ing.id, !ing.isAvailable)}
               className={`text-sm rounded-full border px-3 py-1.5 ${
-                ing.isAvailable ? "border-[#d9d6c6] bg-white" : "border-[#a5462d] bg-[#a5462d] text-white"
+                ing.isAvailable ? "border-line bg-ash-2" : "border-tomato bg-tomato text-cream"
               }`}
             >
               {ing.name}
@@ -73,17 +73,17 @@ export function MenuAvailabilityClient() {
         <div className="flex flex-col gap-5">
           {categories.map((cat) => (
             <div key={cat.id}>
-              <h3 className="text-sm font-medium text-[#585a4d] mb-2">{cat.name}</h3>
+              <h3 className="text-sm font-medium text-cream-dim mb-2">{cat.name}</h3>
               <ul className="flex flex-col gap-1.5">
                 {cat.items.map((item) => (
                   <li
                     key={item.id}
-                    className="flex items-center justify-between border border-[#d9d6c6] rounded px-3 py-2 bg-white/60 text-sm"
+                    className="flex items-center justify-between border border-line rounded px-3 py-2 bg-char text-sm"
                   >
                     <span>
                       {item.name}
                       {!item.effectivelyAvailable && item.isAvailable && item.missingIngredient && (
-                        <span className="text-[#a5462d] text-xs ml-2">
+                        <span className="text-tomato text-xs ml-2">
                           masqué automatiquement — {item.missingIngredient} indisponible
                         </span>
                       )}
@@ -91,7 +91,7 @@ export function MenuAvailabilityClient() {
                     <button
                       onClick={() => toggle("item", item.id, !item.isAvailable)}
                       className={`text-xs rounded px-2.5 py-1 border ${
-                        item.isAvailable ? "border-[#d9d6c6]" : "border-[#a5462d] bg-[#a5462d] text-white"
+                        item.isAvailable ? "border-line" : "border-tomato bg-tomato text-cream"
                       }`}
                     >
                       {item.isAvailable ? "Désactiver" : "Réactiver"}

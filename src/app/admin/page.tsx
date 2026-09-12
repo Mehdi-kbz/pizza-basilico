@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getStaffSession } from "@/lib/require-staff";
+import { AdminShell } from "./AdminShell";
 import { AdminQueue } from "./AdminQueue";
-import { AdminNav } from "./AdminNav";
 
 export const dynamic = "force-dynamic";
 
@@ -17,19 +17,20 @@ export default async function AdminPage() {
   });
 
   return (
-    <main className="mx-auto max-w-4xl w-full px-5 py-8 flex-1">
-      <header className="mb-6 flex items-center justify-between">
-        <div>
-          <p className="text-xs tracking-[0.14em] uppercase text-[#a5462d] font-medium">Pizza Basilico</p>
-          <h1 className="text-2xl font-semibold mt-1">File de commandes</h1>
-        </div>
-        <span className="text-xs rounded border border-[#d9d6c6] px-2 py-1">{staff.role}</span>
-      </header>
-
-      <AdminNav current="queue" />
-
+    <AdminShell
+      current="queue"
+      role={staff.role}
+      wide
+      title="File de commandes"
+      subtitle="Regroupée par créneau de cuisson. Mise à jour en direct, avec alerte à chaque nouvelle commande."
+    >
       {sessions.length === 0 ? (
-        <p className="text-[#585a4d]">Aucune session active. Créez-en une pour commencer à recevoir des commandes.</p>
+        <div className="card p-7">
+          <p className="display text-xl">Aucune session active.</p>
+          <p className="text-sm text-cream-dim mt-2.5">
+            Créez une session dans l&rsquo;onglet Sessions pour commencer à recevoir des commandes.
+          </p>
+        </div>
       ) : (
         <AdminQueue
           sessions={sessions.map((s) => ({
@@ -38,6 +39,6 @@ export default async function AdminPage() {
           }))}
         />
       )}
-    </main>
+    </AdminShell>
   );
 }
