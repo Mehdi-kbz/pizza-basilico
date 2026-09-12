@@ -55,22 +55,36 @@ Le reste est une base fonctionnelle de bout en bout (menu → panier → paiemen
   holds de paiement expirés (chaque minute), synthèse quotidienne (22h) et
   hebdomadaire (dimanche 22h05)
 
+- Temps réel (`src/lib/realtime.ts`, Postgres LISTEN/NOTIFY + Server-Sent
+  Events) : la file admin se met à jour instantanément, avec alerte sonore
+  (bip synthétique, aucun fichier audio) + bannière visuelle + accusé de
+  réception obligatoire (§10.2) — **vérifié** (évènement reçu en direct dans le flux)
+- Codes promo (`/admin/promos`) — création/désactivation, champ code promo
+  ajouté au parcours client — **vérifié**
+- PWA installable : manifest, service worker (coquille + gestion des push),
+  icônes **provisoires** (générées, à remplacer par la vraie identité de marque
+  dès qu'elle est fournie)
+- Notifications push — clés VAPID auto-générées (aucun compte tiers requis),
+  proposées après la première commande réussie, alerte "commande prête" envoyée
+  automatiquement au changement de statut
+- Comptes clients sans mot de passe (lien magique) — connexion, page Mon compte
+- QR code comptoir généré (voir fichier fourni séparément)
+
 **Pas encore construit** :
-- Temps réel (WebSocket / Postgres LISTEN-NOTIFY) — la file admin se rafraîchit
-  toutes les 5 secondes, pas en instantané ; alerte sonore non branchée
-- PWA (installable, notifications push, résilience hors-ligne) — en attente
-  des fichiers de marque pour les icônes
-- Comptes clients sans mot de passe côté UI (modèle `MagicLinkToken` prêt,
-  pas encore de parcours de connexion client)
-- Codes promo côté interface admin (modèle `PromoCode` prêt, pas de formulaire
-  de création — actuellement en base uniquement)
 - Intégration Instagram, page « Notre histoire », partage social
-- QR code walk-up (pas de code à générer, c'est le même parcours client — juste
-  imprimer un QR pointant vers le domaine)
 - Allergènes (structure prête — `Ingredient.allergenTags` — en attente de la
   correspondance à fournir)
-- Envoi réel d'e-mails (EMAIL_API_KEY à renseigner), vrais paiements (clés Stripe)
+- Envoi réel d'e-mails (EMAIL_API_KEY à renseigner), vrais paiements (clés Stripe
+  réelles — le mécanisme technique est prêt et corrigé, voir piège ci-dessous)
 - Tests automatisés au-delà de `scripts/verify-slots.ts`
+
+**Piège corrigé en cours de route** : les variables `NEXT_PUBLIC_*` (clé
+publique Stripe, clé publique VAPID) sont figées dans le bundle **client** au
+moment du build Docker — les fournir seulement au conteneur au démarrage
+(`.env` + `environment:`) ne suffit pas, il faut les passer en `--build-arg`.
+Corrigé dans `docker-compose.yml` (`build.args`) et `Dockerfile` (`ARG`/`ENV`
+dans l'étage `builder`) — sans quoi la vraie clé Stripe ne serait jamais
+arrivée jusqu'au navigateur même une fois renseignée dans `.env`.
 
 ## Développement local
 
