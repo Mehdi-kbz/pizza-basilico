@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { NewsletterForm } from "./NewsletterForm";
 
 export const dynamic = "force-dynamic";
 
@@ -59,6 +60,11 @@ export default async function HomePage() {
           Suivre ma commande
         </Link>
       </p>
+
+      <div className="mt-6 pt-6 border-t border-[#d9d6c6]">
+        <p className="text-sm font-medium mb-2">Être prévenu·e de nos prochains emplacements</p>
+        <NewsletterForm />
+      </div>
     </main>
   );
 }

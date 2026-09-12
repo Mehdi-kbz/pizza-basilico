@@ -12,6 +12,7 @@ import {
 } from "@/lib/slots";
 import { getPaymentProvider } from "@/lib/payments";
 import { signOrderTrackingToken } from "@/lib/auth";
+import { getLoyaltyStatus } from "@/lib/loyalty";
 import { OrderChannel } from "@/generated/prisma/client";
 
 /**
@@ -28,6 +29,7 @@ const bodySchema = z.object({
   note: z.string().max(280).optional(),
   tipCents: z.number().int().min(0).max(5000).default(0),
   promoCode: z.string().optional(),
+  redeemLoyalty: z.boolean().default(false),
   channel: z.enum(["ONLINE", "WALKUP_QR", "WALKUP_STAFF"]).default("ONLINE"),
   items: z
     .array(
@@ -59,9 +61,20 @@ export async function POST(req: Request) {
 
   let priced: Awaited<ReturnType<typeof priceCart>>;
   let discount: Awaited<ReturnType<typeof applyPromoCode>>;
+  let loyaltyDiscountCents = 0;
   try {
     priced = await priceCart(body.items);
     discount = await applyPromoCode(body.promoCode, priced.subtotalCents);
+
+    if (body.redeemLoyalty) {
+      const loyalty = await getLoyaltyStatus(body.email);
+      if (!loyalty.eligibleForFreeItem) {
+        throw new CartValidationError("Pas assez de tampons de fidélité pour un article offert.");
+      }
+      // La pizza offerte est la plus chère du panier (le plus avantageux pour le client).
+      const pizzaLines = priced.lines.filter((l) => l.capacityWeight > 0);
+      loyaltyDiscountCents = Math.max(0, ...pizzaLines.map((l) => l.unitPriceCents));
+    }
   } catch (e) {
     if (e instanceof CartValidationError) {
       return NextResponse.json({ error: e.message }, { status: 409 });
@@ -97,7 +110,8 @@ export async function POST(req: Request) {
       create: { email: body.email },
     });
 
-    const totalCents = Math.max(0, priced.subtotalCents - discount.discountCents + body.tipCents);
+    const totalDiscountCents = discount.discountCents + loyaltyDiscountCents;
+    const totalCents = Math.max(0, priced.subtotalCents - totalDiscountCents + body.tipCents);
     const dailyOrderNumber = await nextDailyOrderNumber(body.sessionId);
 
     const order = await prisma.order.create({
@@ -112,11 +126,14 @@ export async function POST(req: Request) {
         note: body.note,
         subtotalCents: priced.subtotalCents,
         tipCents: body.tipCents,
-        discountCents: discount.discountCents,
+        discountCents: totalDiscountCents,
         totalCents,
         promoCodeId: discount.promoCodeId,
         flaggedLarge: priced.totalUnits >= LARGE_ORDER_UNIT_THRESHOLD,
         holdExpiresAt: computeHoldExpiry(),
+        // Fidélité (§8) : figée à la commande, réglée seulement au paiement confirmé (voir webhook)
+        loyaltyRedeemed: body.redeemLoyalty,
+        loyaltyStampsAwarded: priced.totalUnits,
         items: {
           create: priced.lines.map((line) => ({
             menuItemId: line.menuItemId,

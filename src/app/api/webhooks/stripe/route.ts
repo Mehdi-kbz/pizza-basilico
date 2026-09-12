@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getPaymentProvider } from "@/lib/payments";
 import { releaseTimeSlot } from "@/lib/slots";
+import { settleLoyaltyForOrder } from "@/lib/loyalty";
+import { sendOrderConfirmationEmail } from "@/lib/email";
 import { OrderStatus, PaymentStatus } from "@/generated/prisma/client";
 
 /**
@@ -31,6 +33,21 @@ export async function POST(req: Request) {
             holdExpiresAt: null,
           },
         });
+
+        // Fidélité réglée seulement maintenant, jamais avant un paiement confirmé (§8).
+        if (order.customerId) {
+          await settleLoyaltyForOrder(order.customerId, order.loyaltyStampsAwarded, order.loyaltyRedeemed).catch(
+            (e) => console.error("Échec du règlement de fidélité :", e)
+          );
+        }
+
+        const full = await prisma.order.findUnique({
+          where: { id: order.id },
+          include: { items: { include: { menuItem: true, menuItemSize: true } } },
+        });
+        if (full) {
+          await sendOrderConfirmationEmail(full).catch((e) => console.error("Échec d'envoi du reçu :", e));
+        }
       }
       break;
     }

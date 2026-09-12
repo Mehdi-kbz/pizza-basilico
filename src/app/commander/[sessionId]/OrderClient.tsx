@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useElements, useStripe } from "@stripe/react-stripe-js";
@@ -79,12 +79,31 @@ export function OrderClient({
   const [trackingUrl, setTrackingUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [loyalty, setLoyalty] = useState<{ stampCount: number; eligibleForFreeItem: boolean; stampsUntilFree: number } | null>(null);
+  const [redeemLoyalty, setRedeemLoyalty] = useState(false);
 
   const subtotal = useMemo(
     () => cart.reduce((sum, l) => sum + l.unitPriceCents * l.quantity, 0),
     [cart]
   );
-  const total = subtotal + tip;
+  // Estimation d'affichage seulement — le montant exact est recalculé et vérifié côté serveur (§8, §6.3).
+  const cheapestFreeEstimate = redeemLoyalty && loyalty?.eligibleForFreeItem
+    ? Math.max(0, ...cart.map((l) => l.unitPriceCents))
+    : 0;
+  const total = Math.max(0, subtotal - cheapestFreeEstimate) + tip;
+
+  // Statut de fidélité (§8) — consulté dès qu'un e-mail valide est saisi.
+  useEffect(() => {
+    if (!email.includes("@")) {
+      setLoyalty(null);
+      return;
+    }
+    const handle = setTimeout(async () => {
+      const res = await fetch(`/api/loyalty?email=${encodeURIComponent(email)}`);
+      if (res.ok) setLoyalty(await res.json());
+    }, 500);
+    return () => clearTimeout(handle);
+  }, [email]);
 
   function addToCart(item: MenuItem, size: MenuItemSize, extras: Supplement[]) {
     const unitPriceCents = size.priceCents + extras.reduce((s, e) => s + e.priceCents, 0);
@@ -125,6 +144,7 @@ export function OrderClient({
           pickupName,
           note: note || undefined,
           tipCents: tip,
+          redeemLoyalty: redeemLoyalty && loyalty?.eligibleForFreeItem,
           items: cart.map((l) => ({
             menuItemId: l.menuItemId,
             sizeId: l.sizeId,
@@ -216,6 +236,22 @@ export function OrderClient({
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
+
+          {loyalty && (
+            <div className="text-xs rounded border border-[#d9d6c6] bg-[#e4e9dc] px-3 py-2">
+              {loyalty.eligibleForFreeItem ? (
+                <label className="flex items-center gap-2">
+                  <input type="checkbox" checked={redeemLoyalty} onChange={(e) => setRedeemLoyalty(e.target.checked)} />
+                  🎉 Une pizza offerte est disponible — l&rsquo;utiliser sur cette commande
+                </label>
+              ) : (
+                <span>
+                  {loyalty.stampCount} tampon{loyalty.stampCount > 1 ? "s" : ""} — encore {loyalty.stampsUntilFree} pour une pizza offerte
+                </span>
+              )}
+            </div>
+          )}
+
           <textarea
             className="border border-[#d9d6c6] rounded px-3 py-2 text-sm bg-white"
             placeholder="Note (facultatif)"

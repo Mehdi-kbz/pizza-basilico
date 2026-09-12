@@ -31,6 +31,7 @@ model StaffUser {
   lastLoginAt  DateTime?
 
   auditLogs AuditLog[]
+  createdOrders Order[]
 
   @@map("staff_users")
 }
@@ -335,9 +336,16 @@ model Order {
   paymentRef      String? // id côté prestataire (PaymentIntent, etc.)
   paymentStatus   PaymentStatus @default(PENDING)
   paidInPerson    Boolean       @default(false) // commande assistée, payée hors système
+  createdByStaff  StaffUser?    @relation(fields: [createdByStaffId], references: [id])
+  createdByStaffId String?
 
   flaggedLarge Boolean @default(false) // signalement anti-fraude non bloquant
   holdExpiresAt DateTime? // fin de la réservation provisoire du créneau tant que non payée
+
+  // Fidélité (§8) — snapshot de ce que CETTE commande a fait, pour ne jamais
+  // recalculer après coup et pour ne créditer/débiter qu'une seule fois.
+  loyaltyRedeemed     Boolean @default(false)
+  loyaltyStampsAwarded Int    @default(0)
 
   createdAt   DateTime  @default(now())
   confirmedAt DateTime?
