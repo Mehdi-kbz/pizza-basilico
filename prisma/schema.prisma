@@ -1,0 +1,403 @@
+// Pizza Basilico — schéma de données
+// Reflète le cahier des spécifications v1.0
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// Personnel & authentification admin
+// ---------------------------------------------------------------------------
+
+enum StaffRole {
+  OWNER
+  STAFF
+}
+
+model StaffUser {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String
+  role         StaffRole
+  totpSecret   String? // base32, chiffré au repos par l'application
+  totpEnabled  Boolean   @default(false)
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  lastLoginAt  DateTime?
+
+  auditLogs AuditLog[]
+
+  @@map("staff_users")
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  staffUser  StaffUser? @relation(fields: [staffUserId], references: [id])
+  staffUserId String?
+  action     String // ex: "order.status_changed", "order.refunded", "ingredient.disabled"
+  targetType String // ex: "Order", "Ingredient", "MenuItem"
+  targetId   String
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@index([targetType, targetId])
+  @@map("audit_logs")
+}
+
+// ---------------------------------------------------------------------------
+// Clients, comptes sans mot de passe, fidélité
+// ---------------------------------------------------------------------------
+
+model Customer {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  hasAccount    Boolean  @default(false) // a activé le lien magique au moins une fois
+  createdAt     DateTime @default(now())
+
+  orders          Order[]
+  loyaltyCard     LoyaltyCard?
+  magicLinkTokens MagicLinkToken[]
+  savedPaymentMethods CustomerPaymentMethod[]
+  newsletterConsent NewsletterConsent?
+
+  @@map("customers")
+}
+
+model MagicLinkToken {
+  id         String    @id @default(cuid())
+  customer   Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customerId String
+  tokenHash  String    @unique
+  expiresAt  DateTime
+  usedAt     DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@map("magic_link_tokens")
+}
+
+model CustomerPaymentMethod {
+  id                String   @id @default(cuid())
+  customer          Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customerId        String
+  provider          String // ex: "stripe"
+  providerCustomerId String
+  providerMethodId  String // jeton de la carte, jamais le PAN
+  brand             String
+  last4             String
+  expMonth          Int
+  expYear           Int
+  createdAt         DateTime @default(now())
+
+  @@map("customer_payment_methods")
+}
+
+model LoyaltyCard {
+  id             String    @id @default(cuid())
+  customer       Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customerId     String    @unique
+  stampCount     Int       @default(0)
+  lastEarnedAt   DateTime?
+  lastRedeemedAt DateTime?
+  updatedAt      DateTime  @updatedAt
+
+  @@map("loyalty_cards")
+}
+
+model NewsletterConsent {
+  id             String    @id @default(cuid())
+  customer       Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customerId     String    @unique
+  consentAt      DateTime  @default(now())
+  expiresAt      DateTime // consentAt + 3 ans (recommandation CNIL)
+  unsubscribedAt DateTime?
+
+  @@map("newsletter_consents")
+}
+
+// ---------------------------------------------------------------------------
+// Emplacements & sessions de service
+// ---------------------------------------------------------------------------
+
+model Location {
+  id         String   @id @default(cuid())
+  label      String // ex: "Place de la Mairie"
+  address    String
+  lat        Float?
+  lng        Float?
+  isFavorite Boolean  @default(false) // apparaît dans la liste rapide de création de session
+  createdAt  DateTime @default(now())
+
+  sessions ServiceSession[]
+
+  @@map("locations")
+}
+
+model ServiceSession {
+  id         String   @id @default(cuid())
+  location   Location @relation(fields: [locationId], references: [id])
+  locationId String
+  startAt    DateTime
+  endAt      DateTime
+
+  // paramètres du moteur de créneaux pour cette session
+  windowMinutes    Int @default(10)
+  unitsCapPerWindow  Int @default(6) // ex : 6 pizzas
+  ordersCapPerWindow Int @default(4) // ex : 4 commandes distinctes
+
+  isOrderingOpen Boolean  @default(true) // coupure manuelle par l'admin, indépendante de l'heure
+  createdAt      DateTime @default(now())
+
+  timeSlots TimeSlot[]
+  orders    Order[]
+
+  @@index([startAt])
+  @@map("service_sessions")
+}
+
+model TimeSlot {
+  id         String         @id @default(cuid())
+  session    ServiceSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  sessionId  String
+  startAt    DateTime
+  endAt      DateTime
+
+  unitsCap        Int
+  ordersCap       Int
+  unitsCommitted  Int @default(0)
+  ordersCommitted Int @default(0)
+
+  orders Order[]
+
+  @@unique([sessionId, startAt])
+  @@map("time_slots")
+}
+
+// ---------------------------------------------------------------------------
+// Menu
+// ---------------------------------------------------------------------------
+
+model MenuCategory {
+  id        String @id @default(cuid())
+  name      String // "Pizzas base tomate", "Panuozzo", ...
+  sortOrder Int    @default(0)
+
+  items MenuItem[]
+
+  @@map("menu_categories")
+}
+
+model MenuItem {
+  id         String       @id @default(cuid())
+  category   MenuCategory @relation(fields: [categoryId], references: [id])
+  categoryId String
+  name       String
+  description String?
+
+  isAvailable     Boolean @default(true) // désactivable manuellement, ou en cascade via un ingrédient fixe
+  isVegetarian    Boolean @default(false)
+  isSpicy         Boolean @default(false)
+  isNew           Boolean @default(false)
+  isSpecialty     Boolean @default(false)
+  capacityWeight  Int     @default(1) // unités de capacité consommées (Panuozzo=1, Plaque=3)
+  sortOrder       Int     @default(0)
+
+  sizes       MenuItemSize[]
+  ingredients MenuItemIngredient[]
+  orderItems  OrderItem[]
+
+  @@map("menu_items")
+}
+
+model MenuItemSize {
+  id         String   @id @default(cuid())
+  menuItem   MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  menuItemId String
+  label      String // "26 cm", "31 cm", "Taille unique"
+  priceCents Int
+
+  orderItems OrderItem[]
+
+  @@map("menu_item_sizes")
+}
+
+// Ingrédients & suppléments (universels), avec correspondance allergènes et 86'ing
+model Ingredient {
+  id           String   @id @default(cuid())
+  name         String   @unique
+  isSupplement Boolean  @default(false) // proposable comme "supplément" payant sur tout le menu
+  priceCents   Int      @default(0) // prix du supplément, 0 si ingrédient de base
+  isAvailable  Boolean  @default(true) // rupture de stock (86'ing)
+  allergenTags String[] // codes parmi les 14 allergènes UE, ex: ["GLUTEN","LAIT"]
+
+  usedIn MenuItemIngredient[]
+  orderItemUses OrderItemIngredient[]
+
+  @@map("ingredients")
+}
+
+model MenuItemIngredient {
+  id             String     @id @default(cuid())
+  menuItem       MenuItem   @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  menuItemId     String
+  ingredient     Ingredient @relation(fields: [ingredientId], references: [id])
+  ingredientId   String
+  isFixed        Boolean    @default(true) // true = composant non retirable (indispo -> plat masqué)
+
+  @@unique([menuItemId, ingredientId])
+  @@map("menu_item_ingredients")
+}
+
+// ---------------------------------------------------------------------------
+// Codes promo
+// ---------------------------------------------------------------------------
+
+enum PromoKind {
+  PERCENT
+  FIXED
+}
+
+model PromoCode {
+  id        String    @id @default(cuid())
+  code      String    @unique
+  kind      PromoKind
+  value     Int // pourcentage (0-100) ou centimes selon `kind`
+  isActive  Boolean   @default(true)
+  expiresAt DateTime?
+  maxUses   Int?
+  usesCount Int       @default(0)
+  createdAt DateTime  @default(now())
+
+  orders Order[]
+
+  @@map("promo_codes")
+}
+
+// ---------------------------------------------------------------------------
+// Commandes
+// ---------------------------------------------------------------------------
+
+enum OrderChannel {
+  ONLINE
+  WALKUP_QR
+  WALKUP_STAFF
+}
+
+enum OrderStatus {
+  PENDING_PAYMENT
+  CONFIRMED
+  IN_PREP
+  READY
+  COMPLETED
+  CANCELLED
+  REFUNDED
+  NO_SHOW
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  REFUNDED
+}
+
+model Order {
+  id         String  @id @default(cuid())
+  session    ServiceSession @relation(fields: [sessionId], references: [id])
+  sessionId  String
+  timeSlot   TimeSlot @relation(fields: [timeSlotId], references: [id])
+  timeSlotId String
+
+  customer   Customer? @relation(fields: [customerId], references: [id])
+  customerId String?
+  guestEmail String // toujours renseigné, même en commande invité (= customer.email)
+
+  channel          OrderChannel @default(ONLINE)
+  status           OrderStatus  @default(PENDING_PAYMENT)
+  dailyOrderNumber Int // numéro séquentiel, réinitialisé par session
+
+  pickupName String
+  note       String?
+
+  subtotalCents Int
+  tipCents      Int @default(0)
+  discountCents Int @default(0)
+  totalCents    Int
+
+  promoCode   PromoCode? @relation(fields: [promoCodeId], references: [id])
+  promoCodeId String?
+
+  paymentProvider String? // "stripe", ... — via la couche d'abstraction
+  paymentRef      String? // id côté prestataire (PaymentIntent, etc.)
+  paymentStatus   PaymentStatus @default(PENDING)
+  paidInPerson    Boolean       @default(false) // commande assistée, payée hors système
+
+  flaggedLarge Boolean @default(false) // signalement anti-fraude non bloquant
+  holdExpiresAt DateTime? // fin de la réservation provisoire du créneau tant que non payée
+
+  createdAt   DateTime  @default(now())
+  confirmedAt DateTime?
+  readyAt     DateTime?
+  completedAt DateTime?
+  cancelledAt DateTime?
+
+  items OrderItem[]
+
+  @@unique([sessionId, dailyOrderNumber])
+  @@index([status])
+  @@map("orders")
+}
+
+model OrderItem {
+  id             String        @id @default(cuid())
+  order          Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId        String
+  menuItem       MenuItem      @relation(fields: [menuItemId], references: [id])
+  menuItemId     String
+  menuItemSize   MenuItemSize? @relation(fields: [menuItemSizeId], references: [id])
+  menuItemSizeId String?
+
+  quantity        Int
+  unitPriceCents  Int // prix figé au moment de la commande
+  capacityWeight  Int // poids de préparation figé au moment de la commande
+
+  addedIngredients   OrderItemIngredient[] @relation("added")
+  removedIngredients OrderItemIngredient[] @relation("removed")
+
+  @@map("order_items")
+}
+
+// Suppléments ajoutés ou ingrédients par défaut retirés, figés au moment de la commande
+model OrderItemIngredient {
+  id            String     @id @default(cuid())
+  ingredient    Ingredient @relation(fields: [ingredientId], references: [id])
+  ingredientId  String
+  priceCents    Int        @default(0)
+
+  addedTo    OrderItem? @relation("added", fields: [addedToId], references: [id], onDelete: Cascade)
+  addedToId  String?
+  removedFrom   OrderItem? @relation("removed", fields: [removedFromId], references: [id], onDelete: Cascade)
+  removedFromId String?
+
+  @@map("order_item_ingredients")
+}
+
+// ---------------------------------------------------------------------------
+// Traiteur / événements
+// ---------------------------------------------------------------------------
+
+model CateringInquiry {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  eventDate DateTime?
+  details   String
+  status    String   @default("NEW") // NEW, CONTACTED, CLOSED
+  createdAt DateTime @default(now())
+
+  @@map("catering_inquiries")
+}
