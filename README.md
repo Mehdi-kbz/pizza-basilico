@@ -94,18 +94,45 @@ import { generateTimeSlotsForSession } from '@/lib/slots';
 "
 ```
 
-## Déploiement sur le VPS (`pizza.mehdi.website`)
+## Déploiement — déjà en ligne sur pizza.mehdi.website
 
-1. Pointer un enregistrement DNS `A` de `pizza.mehdi.website` vers l'IP du VPS.
-2. Sur le VPS : cloner le dépôt, créer `.env` à partir de `.env.example`
-   (générer `SESSION_SECRET` avec `openssl rand -base64 48`, renseigner les vraies
-   clés Stripe, définir `POSTGRES_PASSWORD`).
-3. `docker compose up -d --build` — Caddy obtient et renouvelle automatiquement
-   le certificat HTTPS pour le sous-domaine ; les migrations s'appliquent au démarrage
-   du conteneur `app` (voir `docker-entrypoint.sh`).
-4. Charger le menu et créer le premier compte : `docker compose exec app npx tsx prisma/seed.ts`
-   puis `docker compose exec app npx tsx scripts/create-staff.ts ...`.
-5. Configurer le endpoint webhook Stripe vers `https://pizza.mehdi.website/api/webhooks/stripe`.
+Ce VPS héberge aussi jobsniper, travelapp et pz.mehdi.website derrière un Caddy
+partagé (`/home/ubuntu/jobsniper/Caddyfile`, conteneur `jobsniper_caddy`) qui
+possède seul les ports 80/443. Ce projet ne lance donc **pas** son propre
+Caddy : `docker-compose.yml` publie uniquement `app` sur le port hôte `3003`,
+et un bloc a été ajouté au Caddyfile partagé :
+
+```
+pizza.mehdi.website {
+    reverse_proxy 172.17.0.1:3003
+    encode gzip
+    header { ... }
+}
+```
+
+**Piège rencontré, à retenir pour la prochaine modification** : éditer le
+Caddyfile sur l'hôte puis faire `caddy reload` a chargé l'ancienne version —
+le bind-mount d'un *fichier unique* (pas un dossier) reste accroché à l'ancien
+inode si le fichier est remplacé plutôt que modifié en place. Correctif :
+réécrire le contenu à travers le point de montage déjà ouvert avant de recharger :
+
+```bash
+docker exec -i jobsniper_caddy sh -c 'cat > /etc/caddy/Caddyfile' < /home/ubuntu/jobsniper/Caddyfile
+docker exec jobsniper_caddy caddy validate --config /etc/caddy/Caddyfile
+docker exec jobsniper_caddy caddy reload --config /etc/caddy/Caddyfile
+```
+
+Pour redéployer une mise à jour du code :
+
+```bash
+cd /home/ubuntu/pizza-basilico
+docker compose up -d --build   # rebuild + migrations automatiques (docker-entrypoint.sh)
+```
+
+Reste à faire avant que les paiements réels fonctionnent : renseigner de vraies
+clés Stripe dans `.env` (actuellement des valeurs à compléter), puis configurer
+le endpoint webhook Stripe vers `https://pizza.mehdi.website/api/webhooks/stripe`
+et relancer `docker compose up -d`.
 
 ## Structure
 
