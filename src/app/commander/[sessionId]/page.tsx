@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { isEffectivelyAvailable } from "@/lib/menu-availability";
 import { OrderClient } from "./OrderClient";
 
 export const dynamic = "force-dynamic";
@@ -13,16 +14,22 @@ export default async function CommanderPage({ params }: { params: Promise<{ sess
   });
   if (!session) notFound();
 
-  const categories = await prisma.menuCategory.findMany({
+  const categoriesRaw = await prisma.menuCategory.findMany({
     orderBy: { sortOrder: "asc" },
     include: {
       items: {
-        where: { isAvailable: true },
         orderBy: { sortOrder: "asc" },
-        include: { sizes: true },
+        include: { sizes: true, ingredients: { include: { ingredient: true } } },
       },
     },
   });
+
+  // Disponibilité en cascade (§5.4) : un article n'apparaît que s'il est activé
+  // ET qu'aucun de ses composants fixes n'est en rupture.
+  const categories = categoriesRaw.map((cat) => ({
+    ...cat,
+    items: cat.items.filter(isEffectivelyAvailable),
+  }));
 
   const supplements = await prisma.ingredient.findMany({
     where: { isSupplement: true, isAvailable: true },

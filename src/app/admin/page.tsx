@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getStaffSession } from "@/lib/require-staff";
 import { AdminQueue } from "./AdminQueue";
+import { AdminNav } from "./AdminNav";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +25,8 @@ export default async function AdminPage() {
         </div>
         <span className="text-xs rounded border border-[#d9d6c6] px-2 py-1">{staff.role}</span>
       </header>
+
+      <AdminNav current="queue" />
 
       {sessions.length === 0 ? (
         <p className="text-[#585a4d]">Aucune session active. Créez-en une pour commencer à recevoir des commandes.</p>

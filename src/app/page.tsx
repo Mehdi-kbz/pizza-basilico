@@ -52,6 +52,13 @@ export default async function HomePage() {
           ))}
         </ul>
       )}
+
+      <p className="mt-10 text-sm text-[#585a4d]">
+        Déjà commandé ?{" "}
+        <Link href="/suivi" className="underline text-[#3b5a34]">
+          Suivre ma commande
+        </Link>
+      </p>
     </main>
   );
 }

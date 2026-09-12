@@ -34,14 +34,17 @@ Le reste est une base fonctionnelle de bout en bout (menu → panier → paiemen
 - Tableau de bord admin (`/admin`) : file de commandes groupée par créneau,
   changement de statut, remboursement exceptionnel manuel
 - Journal d'audit des actions du personnel
+- Page de suivi de commande client (`/suivi/[id]`, lien non devinable) + recherche
+  « suivre ma commande » (e-mail + numéro) sans besoin de rouvrir l'e-mail
+- Interface admin de création/ouverture-fermeture des sessions (`/admin/sessions`)
+- Interface admin de rupture de stock en cascade (`/admin/menu`) — désactiver un
+  ingrédient masque automatiquement (et réversiblement) toute pizza qui en dépend,
+  **vérifié bout en bout** (voir ci-dessous)
 
 **Pas encore construit** (le cahier des charges couvre plus que ce premier lot) :
-- Interface admin pour créer/publier les sessions (aujourd'hui : script/console uniquement)
 - Temps réel (WebSocket / Postgres LISTEN-NOTIFY) — la file admin se rafraîchit
   actuellement toutes les 5 secondes, pas en instantané ; alerte sonore non branchée
 - PWA (installable, notifications push, résilience hors-ligne)
-- Ruptures de stock en cascade côté interface (le modèle de données le supporte déjà :
-  `Ingredient.isAvailable`, `MenuItemIngredient.isFixed`)
 - Fidélité (carte à tampons), comptes clients sans mot de passe, codes promo côté UI
   (modèles de données prêts : `LoyaltyCard`, `MagicLinkToken`, `PromoCode`)
 - E-mails transactionnels (confirmation, synthèses au propriétaire, newsletter)

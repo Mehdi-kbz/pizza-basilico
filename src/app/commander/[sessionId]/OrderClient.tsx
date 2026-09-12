@@ -76,6 +76,7 @@ export function OrderClient({
   const [tip, setTip] = useState(0);
   const [step, setStep] = useState<"menu" | "payment">("menu");
   const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [trackingUrl, setTrackingUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -138,6 +139,7 @@ export function OrderClient({
         return;
       }
       setClientSecret(data.clientSecret);
+      setTrackingUrl(data.trackingUrl);
       setStep("payment");
     } finally {
       setSubmitting(false);
@@ -152,10 +154,10 @@ export function OrderClient({
     );
   }
 
-  if (step === "payment" && clientSecret && stripePromise) {
+  if (step === "payment" && clientSecret && trackingUrl && stripePromise) {
     return (
       <Elements stripe={stripePromise} options={{ clientSecret }}>
-        <PaymentStep totalCents={total} />
+        <PaymentStep totalCents={total} trackingUrl={trackingUrl} />
       </Elements>
     );
   }
@@ -324,7 +326,7 @@ function MenuItemRow({
   );
 }
 
-function PaymentStep({ totalCents }: { totalCents: number }) {
+function PaymentStep({ totalCents, trackingUrl }: { totalCents: number; trackingUrl: string }) {
   const stripe = useStripe();
   const elements = useElements();
   const router = useRouter();
@@ -336,15 +338,18 @@ function PaymentStep({ totalCents }: { totalCents: number }) {
     if (!stripe || !elements) return;
     setLoading(true);
     setError(null);
+    // Pour un moyen de paiement redirigeant le navigateur (ex. certains virements/3DS),
+    // Stripe renvoie directement vers la page de suivi réelle de la commande.
     const { error: confirmError } = await stripe.confirmPayment({
       elements,
-      confirmParams: { return_url: `${window.location.origin}/suivi` },
+      confirmParams: { return_url: `${window.location.origin}${trackingUrl}` },
+      redirect: "if_required",
     });
     if (confirmError) {
       setError(confirmError.message ?? "Le paiement a échoué.");
       setLoading(false);
     } else {
-      router.push("/suivi");
+      router.push(trackingUrl);
     }
   }
 

@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { isEffectivelyAvailable } from "@/lib/menu-availability";
 
 /**
  * Calcul et validation du panier — revalidation serveur systématique des prix,
@@ -42,9 +43,9 @@ export async function priceCart(items: CartItemInput[]): Promise<{
 
     const menuItem = await prisma.menuItem.findUnique({
       where: { id: item.menuItemId },
-      include: { sizes: true },
+      include: { sizes: true, ingredients: { include: { ingredient: true } } },
     });
-    if (!menuItem || !menuItem.isAvailable) {
+    if (!menuItem || !isEffectivelyAvailable(menuItem)) {
       throw new CartValidationError(`« ${menuItem?.name ?? item.menuItemId} » n'est plus disponible.`);
     }
 
