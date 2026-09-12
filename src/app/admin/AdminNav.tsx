@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-export function AdminNav({ current }: { current: "queue" | "sessions" | "menu" | "commande" | "stats" }) {
+export function AdminNav({ current }: { current: "queue" | "sessions" | "menu" | "commande" | "stats" | "promos" }) {
   const item = (href: string, key: typeof current, label: string) => (
     <Link
       href={href}
@@ -16,6 +16,7 @@ export function AdminNav({ current }: { current: "queue" | "sessions" | "menu" |
       {item("/admin/sessions", "sessions", "Emplacements & sessions")}
       {item("/admin/menu", "menu", "Disponibilité du menu")}
       {item("/admin/stats", "stats", "Statistiques")}
+      {item("/admin/promos", "promos", "Codes promo")}
     </nav>
   );
 }

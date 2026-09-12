@@ -65,6 +65,7 @@ model Customer {
   magicLinkTokens MagicLinkToken[]
   savedPaymentMethods CustomerPaymentMethod[]
   newsletterConsent NewsletterConsent?
+  pushSubscriptions PushSubscription[]
 
   @@map("customers")
 }
@@ -397,6 +398,19 @@ model OrderItemIngredient {
 // ---------------------------------------------------------------------------
 // Traiteur / événements
 // ---------------------------------------------------------------------------
+
+// Notifications push (PWA, §11.4) — pas de coût par message, contrairement au SMS.
+model PushSubscription {
+  id         String   @id @default(cuid())
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customerId String
+  endpoint   String   @unique
+  p256dh     String
+  auth       String
+  createdAt  DateTime @default(now())
+
+  @@map("push_subscriptions")
+}
 
 model CateringInquiry {
   id        String   @id @default(cuid())

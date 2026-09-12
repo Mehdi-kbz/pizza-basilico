@@ -4,6 +4,7 @@ import { getPaymentProvider } from "@/lib/payments";
 import { releaseTimeSlot } from "@/lib/slots";
 import { settleLoyaltyForOrder } from "@/lib/loyalty";
 import { sendOrderConfirmationEmail } from "@/lib/email";
+import { notifyOrdersChanged } from "@/lib/realtime";
 import { OrderStatus, PaymentStatus } from "@/generated/prisma/client";
 
 /**
@@ -48,6 +49,7 @@ export async function POST(req: Request) {
         if (full) {
           await sendOrderConfirmationEmail(full).catch((e) => console.error("Échec d'envoi du reçu :", e));
         }
+        await notifyOrdersChanged(order.sessionId).catch((e) => console.error("[realtime] notify :", e));
       }
       break;
     }

@@ -73,6 +73,7 @@ export function OrderClient({
   const [pickupName, setPickupName] = useState("");
   const [email, setEmail] = useState("");
   const [note, setNote] = useState("");
+  const [promoCode, setPromoCode] = useState("");
   const [tip, setTip] = useState(0);
   const [step, setStep] = useState<"menu" | "payment">("menu");
   const [clientSecret, setClientSecret] = useState<string | null>(null);
@@ -144,6 +145,7 @@ export function OrderClient({
           pickupName,
           note: note || undefined,
           tipCents: tip,
+          promoCode: promoCode || undefined,
           redeemLoyalty: redeemLoyalty && loyalty?.eligibleForFreeItem,
           items: cart.map((l) => ({
             menuItemId: l.menuItemId,
@@ -257,6 +259,12 @@ export function OrderClient({
             placeholder="Note (facultatif)"
             value={note}
             onChange={(e) => setNote(e.target.value)}
+          />
+          <input
+            className="border border-[#d9d6c6] rounded px-3 py-2 text-sm bg-white uppercase"
+            placeholder="Code promo (facultatif)"
+            value={promoCode}
+            onChange={(e) => setPromoCode(e.target.value)}
           />
           <label className="text-sm flex items-center gap-2">
             Pourboire :

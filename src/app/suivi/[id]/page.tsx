@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { verifyOrderTrackingToken } from "@/lib/auth";
 import { StatusView } from "./StatusView";
+import { PushPrompt } from "./PushPrompt";
 
 export const dynamic = "force-dynamic";
 
@@ -51,6 +52,7 @@ export default async function SuiviPage({
       </p>
 
       <StatusView orderId={order.id} initialStatus={order.status} statusLabels={STATUS_LABELS} />
+      <PushPrompt orderId={order.id} />
 
       <section className="rounded-lg border border-[#d9d6c6] bg-white/60 p-5 mt-4">
         <p className="font-medium mb-2">Retrait au nom de {order.pickupName}</p>

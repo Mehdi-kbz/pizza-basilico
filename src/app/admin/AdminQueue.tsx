@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 
 interface OrderItemView {
   quantity: number;
@@ -49,26 +49,76 @@ const NEXT_STATUS: Record<string, string | null> = {
   NO_SHOW: null,
 };
 
+/** Bip synthétique (aucun fichier audio nécessaire) — assez fort pour être remarqué dans le bruit du camion. */
+function playAlertSound() {
+  try {
+    const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    const ctx = new AudioCtx();
+    [0, 0.18].forEach((delay) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.value = 880;
+      gain.gain.setValueAtTime(0.4, ctx.currentTime + delay);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.16);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(ctx.currentTime + delay);
+      osc.stop(ctx.currentTime + delay + 0.16);
+    });
+  } catch {
+    /* audio indisponible (permissions navigateur) — l'alerte visuelle suffit */
+  }
+}
+
 export function AdminQueue({ sessions }: { sessions: { id: string; label: string }[] }) {
   const [sessionId, setSessionId] = useState(sessions[0]?.id);
   const [slots, setSlots] = useState<SlotView[]>([]);
+  const [pendingAlerts, setPendingAlerts] = useState<OrderView[]>([]);
+  const knownOrderIds = useRef<Set<string> | null>(null);
 
   const load = useCallback(async () => {
     if (!sessionId) return;
     const res = await fetch(`/api/admin/orders?sessionId=${sessionId}`);
-    if (res.ok) {
-      const data = await res.json();
-      setSlots(data.slots);
+    if (!res.ok) return;
+    const data = await res.json();
+    const allOrders: OrderView[] = data.slots.flatMap((s: SlotView) => s.orders);
+
+    // Alerte sonore + visuelle sur toute commande confirmée jamais vue depuis
+    // l'ouverture de cette page (§10.2) — jamais au tout premier chargement.
+    if (knownOrderIds.current) {
+      const fresh = allOrders.filter((o) => o.status === "CONFIRMED" && !knownOrderIds.current!.has(o.id));
+      if (fresh.length > 0) {
+        setPendingAlerts((prev) => [...prev, ...fresh]);
+        playAlertSound();
+      }
     }
+    knownOrderIds.current = new Set(allOrders.map((o) => o.id));
+
+    setSlots(data.slots);
   }, [sessionId]);
 
   useEffect(() => {
+    knownOrderIds.current = null; // changement de session : pas d'alerte rétroactive
     load();
-    // Le temps réel via WebSocket/Postgres LISTEN-NOTIFY n'est pas encore branché :
-    // rafraîchissement périodique en attendant (voir README, prochaines étapes).
-    const interval = setInterval(load, 5000);
-    return () => clearInterval(interval);
-  }, [load]);
+  }, [sessionId, load]);
+
+  useEffect(() => {
+    // Temps réel via Server-Sent Events (Postgres LISTEN/NOTIFY, §10.2) — un
+    // sondage de secours à basse fréquence reste actif en cas de coupure du flux.
+    const source = new EventSource("/api/admin/orders/stream");
+    source.onmessage = (e) => {
+      if (e.data === sessionId) load();
+    };
+    const fallback = setInterval(load, 30_000);
+    return () => {
+      source.close();
+      clearInterval(fallback);
+    };
+  }, [sessionId, load]);
+
+  function acknowledgeAlert(orderId: string) {
+    setPendingAlerts((prev) => prev.filter((o) => o.id !== orderId));
+  }
 
   async function setStatus(orderId: string, status: string) {
     await fetch(`/api/admin/orders/${orderId}/status`, {
@@ -81,6 +131,25 @@ export function AdminQueue({ sessions }: { sessions: { id: string; label: string
 
   return (
     <div>
+      {pendingAlerts.length > 0 && (
+        <div className="flex flex-col gap-2 mb-4">
+          {pendingAlerts.map((o) => (
+            <div
+              key={o.id}
+              className="flex items-center justify-between rounded-lg border-2 border-[#a5462d] bg-[#f6dfd6] px-4 py-3 animate-pulse"
+            >
+              <p className="font-semibold text-[#7a3320]">🔔 Nouvelle commande #{o.dailyOrderNumber} — {o.pickupName}</p>
+              <button
+                onClick={() => acknowledgeAlert(o.id)}
+                className="text-xs bg-[#a5462d] text-white rounded px-3 py-1.5 font-medium"
+              >
+                Vu
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
       <select
         value={sessionId}
         onChange={(e) => setSessionId(e.target.value)}

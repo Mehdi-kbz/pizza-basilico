@@ -5,6 +5,7 @@ import { getStaffSession } from "@/lib/require-staff";
 import { priceCart, applyPromoCode, CartValidationError } from "@/lib/cart";
 import { findNextAvailableSlot, reserveTimeSlot, nextDailyOrderNumber, SlotFullError } from "@/lib/slots";
 import { getLoyaltyStatus, settleLoyaltyForOrder } from "@/lib/loyalty";
+import { notifyOrdersChanged } from "@/lib/realtime";
 import { OrderChannel, OrderStatus, PaymentStatus } from "@/generated/prisma/client";
 
 /**
@@ -144,6 +145,8 @@ export async function POST(req: Request) {
       metadata: { override: body.override },
     },
   });
+
+  await notifyOrdersChanged(body.sessionId).catch((e) => console.error("[realtime] notify :", e));
 
   return NextResponse.json({ order });
 }

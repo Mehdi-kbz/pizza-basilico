@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { getStaffSession } from "@/lib/require-staff";
 import { releaseTimeSlot } from "@/lib/slots";
 import { getPaymentProvider } from "@/lib/payments";
+import { notifyOrdersChanged } from "@/lib/realtime";
+import { sendPushToCustomer } from "@/lib/push";
 import { OrderStatus, PaymentStatus } from "@/generated/prisma/client";
 
 /**
@@ -58,6 +60,16 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       metadata: { from: order.status, to: status },
     },
   });
+
+  await notifyOrdersChanged(order.sessionId).catch((e) => console.error("[realtime] notify :", e));
+
+  if (status === "READY" && order.customerId) {
+    await sendPushToCustomer(order.customerId, {
+      title: `Commande #${order.dailyOrderNumber} prête !`,
+      body: `${order.pickupName}, votre commande vous attend au camion.`,
+      url: `/suivi/${order.id}`,
+    }).catch((e) => console.error("[push] échec :", e));
+  }
 
   return NextResponse.json({ order: updated });
 }
