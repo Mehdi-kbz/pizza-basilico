@@ -39,19 +39,37 @@ Le reste est une base fonctionnelle de bout en bout (menu → panier → paiemen
 - Interface admin de création/ouverture-fermeture des sessions (`/admin/sessions`)
 - Interface admin de rupture de stock en cascade (`/admin/menu`) — désactiver un
   ingrédient masque automatiquement (et réversiblement) toute pizza qui en dépend,
-  **vérifié bout en bout** (voir ci-dessous)
+  **vérifié bout en bout**
+- Fidélité — carte à tampons, rédemption active par le client, expiration 90 jours
+  (`src/lib/loyalty.ts`), **vérifiée bout en bout** (gain, rédemption, remise
+  exacte, recrédit après rédemption)
+- Commande assistée par le personnel (`/admin/commande`) — paiement marqué
+  "en personne", dépassement manuel du créneau possible (§6.4), fidélité créditée
+  immédiatement (pas de webhook pour ce canal)
+- Newsletter (`/api/newsletter`) — consentement 3 ans (CNIL, §12.2)
+- Abstraction e-mail (`src/lib/email/`) — Resend si `EMAIL_API_KEY` est renseigné,
+  sinon un adaptateur silencieux (log uniquement, ne fait jamais échouer une commande) ;
+  reçu de commande envoyé au paiement confirmé, synthèses au propriétaire
+- Page de statistiques admin (`/admin/stats`) — jour/semaine, en plus des e-mails
+- Tâches planifiées (`src/instrumentation.ts`, cron in-process) : libération des
+  holds de paiement expirés (chaque minute), synthèse quotidienne (22h) et
+  hebdomadaire (dimanche 22h05)
 
-**Pas encore construit** (le cahier des charges couvre plus que ce premier lot) :
+**Pas encore construit** :
 - Temps réel (WebSocket / Postgres LISTEN-NOTIFY) — la file admin se rafraîchit
-  actuellement toutes les 5 secondes, pas en instantané ; alerte sonore non branchée
-- PWA (installable, notifications push, résilience hors-ligne)
-- Fidélité (carte à tampons), comptes clients sans mot de passe, codes promo côté UI
-  (modèles de données prêts : `LoyaltyCard`, `MagicLinkToken`, `PromoCode`)
-- E-mails transactionnels (confirmation, synthèses au propriétaire, newsletter)
+  toutes les 5 secondes, pas en instantané ; alerte sonore non branchée
+- PWA (installable, notifications push, résilience hors-ligne) — en attente
+  des fichiers de marque pour les icônes
+- Comptes clients sans mot de passe côté UI (modèle `MagicLinkToken` prêt,
+  pas encore de parcours de connexion client)
+- Codes promo côté interface admin (modèle `PromoCode` prêt, pas de formulaire
+  de création — actuellement en base uniquement)
 - Intégration Instagram, page « Notre histoire », partage social
-- Commande assistée par le personnel (tablette), QR code walk-up
-- Allergènes (structure de données prête — `Ingredient.allergenTags` — en attente
-  de la correspondance à fournir)
+- QR code walk-up (pas de code à générer, c'est le même parcours client — juste
+  imprimer un QR pointant vers le domaine)
+- Allergènes (structure prête — `Ingredient.allergenTags` — en attente de la
+  correspondance à fournir)
+- Envoi réel d'e-mails (EMAIL_API_KEY à renseigner), vrais paiements (clés Stripe)
 - Tests automatisés au-delà de `scripts/verify-slots.ts`
 
 ## Développement local
