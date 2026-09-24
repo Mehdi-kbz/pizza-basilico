@@ -13,7 +13,17 @@ export function pizzaSlug(name: string) {
 
 // Les photos vivent dans /public/pizzas/<slug>.webp (slug = nom de l'article sans accents).
 // Tant qu'une photo manque, on affiche un visuel de remplacement plutôt qu'une image cassée.
-export function PizzaPhoto({ name, src, className = "" }: { name: string; src?: string; className?: string }) {
+export function PizzaPhoto({
+  name,
+  src,
+  className = "",
+  fallback = "🍕",
+}: {
+  name: string;
+  src?: string;
+  className?: string;
+  fallback?: string;
+}) {
   const [failed, setFailed] = useState(false);
   const ref = useRef<HTMLImageElement>(null);
   const url = src ?? `/pizzas/${pizzaSlug(name)}.webp`;
@@ -31,7 +41,7 @@ export function PizzaPhoto({ name, src, className = "" }: { name: string; src?: 
         role="img"
         aria-label={name}
       >
-        🍕
+        {fallback}
       </div>
     );
   }

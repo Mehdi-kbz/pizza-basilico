@@ -59,7 +59,7 @@ export default async function CartePage() {
         }}
       />
 
-      <div className="mx-auto max-w-4xl px-5 lg:px-8 pt-12 pb-6 md:pt-16">
+      <div className="mx-auto max-w-6xl px-5 lg:px-8 pt-12 pb-6 md:pt-16">
         <p className="eyebrow">Au feu de bois</p>
         <h1 className="display text-[clamp(2.4rem,7vw,4.2rem)] mt-3">La carte</h1>
         <p className="lede mt-5">
@@ -81,7 +81,9 @@ export default async function CartePage() {
         </div>
       </div>
 
-      <CarteClient categories={categories} supplements={supplements.map((s) => ({ name: s.name, priceCents: s.priceCents }))} />
+      <CarteClient
+        orderHref={openSession ? `/commander/${openSession.id}` : "/#nous-trouver"}
+        categories={categories} supplements={supplements.map((s) => ({ name: s.name, priceCents: s.priceCents }))} />
     </main>
   );
 }
