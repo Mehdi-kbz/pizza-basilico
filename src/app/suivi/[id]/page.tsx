@@ -26,7 +26,7 @@ export default async function SuiviPage({
   const order = await prisma.order.findUnique({
     where: { id },
     include: {
-      items: { include: { menuItem: true, menuItemSize: true, addedIngredients: { include: { ingredient: true } } } },
+      items: { include: { menuItem: true, menuItemSize: true, addedIngredients: { include: { ingredient: true } }, removedIngredients: { include: { ingredient: true } } } },
       session: { include: { location: true } },
       timeSlot: true,
     },
@@ -88,6 +88,12 @@ export default async function SuiviPage({
                       + {it.addedIngredients.map((a) => a.ingredient.name).join(", ")}
                     </span>
                   )}
+                  {it.removedIngredients.length > 0 && (
+                    <span className="block text-[0.75rem] text-fg-faint">
+                      Sans {it.removedIngredients.map((a) => a.ingredient.name.toLowerCase()).join(", ")}
+                    </span>
+                  )}
+                  {it.note && <span className="block text-[0.75rem] italic text-fg-faint">« {it.note} »</span>}
                 </span>
                 <span className="tnum text-fg-dim shrink-0">{eur(it.unitPriceCents * it.quantity)}</span>
               </li>

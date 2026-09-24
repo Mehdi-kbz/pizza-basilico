@@ -7,6 +7,8 @@ interface OrderItemView {
   menuItem: { name: string };
   menuItemSize: { label: string } | null;
   addedIngredients: { ingredient: { name: string } }[];
+  removedIngredients: { ingredient: { name: string } }[];
+  note: string | null;
 }
 interface OrderView {
   id: string;
@@ -197,6 +199,12 @@ export function AdminQueue({ sessions }: { sessions: { id: string; label: string
                               {it.addedIngredients.length > 0 && (
                                 <> + {it.addedIngredients.map((a) => a.ingredient.name).join(", ")}</>
                               )}
+                              {it.removedIngredients.length > 0 && (
+                                <span className="font-semibold text-tomato">
+                                  {" "}— SANS {it.removedIngredients.map((a) => a.ingredient.name.toLowerCase()).join(", ")}
+                                </span>
+                              )}
+                              {it.note && <span className="italic"> « {it.note} »</span>}
                             </li>
                           ))}
                         </ul>

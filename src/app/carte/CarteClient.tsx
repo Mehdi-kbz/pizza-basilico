@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { PizzaPhoto } from "@/components/PizzaPhoto";
+import { CustomizeSheet } from "@/components/CustomizeSheet";
+import { useCart } from "@/lib/cart-store";
 
 interface Item {
   id: string;
@@ -12,8 +14,8 @@ interface Item {
   isSpicy: boolean;
   isNew: boolean;
   isSpecialty: boolean;
-  composition: string[];
-  sizes: { label: string; priceCents: number }[];
+  ingredients: { id: string; name: string }[];
+  sizes: { id: string; label: string; priceCents: number }[];
 }
 interface Category {
   id: string;
@@ -47,13 +49,18 @@ export function CarteClient({
   categories,
   supplements,
   orderHref,
+  showExtras = true,
 }: {
   categories: Category[];
-  supplements: { name: string; priceCents: number }[];
+  supplements: { id: string; name: string; priceCents: number }[];
   orderHref: string;
+  showExtras?: boolean;
 }) {
   const [filter, setFilter] = useState<FilterKey>("all");
   const [cat, setCat] = useState<string>("all");
+  const [customizing, setCustomizing] = useState<{ item: Item; category: string } | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+  const cart = useCart();
 
   const cards = useMemo(
     () =>
@@ -118,9 +125,9 @@ export function CarteClient({
 
             <h3 className="display text-[1.05rem] sm:text-[1.2rem] text-fg leading-tight mt-6">{item.name}</h3>
 
-            {item.composition.length > 0 && (
+            {item.ingredients.length > 0 && (
               <p className="text-[0.78rem] text-fg-dim mt-2 leading-relaxed line-clamp-3">
-                {item.composition.join(" · ")}
+                {item.ingredients.map((i) => i.name).join(" · ")}
               </p>
             )}
 
@@ -133,30 +140,67 @@ export function CarteClient({
               </div>
             )}
 
-            <div className="mt-auto pt-4 w-full flex items-end justify-between gap-2">
-              <div className="flex flex-col gap-0.5 text-left tnum">
+            <div className="mt-auto pt-4 w-full flex flex-col gap-3">
+              <div className="flex flex-wrap items-baseline justify-center gap-x-3 gap-y-0.5 tnum">
                 {item.sizes.map((s) => (
                   <span key={s.label} className="text-[0.95rem] leading-tight">
                     <span className="text-ember font-bold">{eur(s.priceCents)}</span>
                     {item.sizes.length > 1 && (
-                      <span className="ml-1.5 text-[0.62rem] uppercase tracking-wider text-fg-faint">{s.label}</span>
+                      <span className="ml-1 text-[0.62rem] uppercase tracking-wider text-fg-faint">{s.label}</span>
                     )}
                   </span>
                 ))}
               </div>
-              <Link
-                href={orderHref}
-                aria-label={`Commander — ${item.name}`}
-                className="grid place-items-center h-10 w-10 shrink-0 rounded-full bg-gradient-to-b from-flame to-flame-deep text-white text-lg shadow-[0_10px_18px_-8px_rgba(217,68,26,0.8)] hover:scale-105 active:scale-95 transition-transform"
+              <button
+                type="button"
+                onClick={() => setCustomizing({ item, category })}
+                className="btn btn-primary w-full !py-2.5 !px-3 !text-[0.82rem]"
               >
-                ↗
-              </Link>
+                Ajouter au panier
+              </button>
             </div>
           </article>
         ))}
       </div>
 
-      {supplements.length > 0 && (
+      {customizing && (
+        <CustomizeSheet
+          item={customizing.item}
+          supplements={supplements}
+          fallback={CATEGORY_EMOJI[customizing.category] ?? "🍕"}
+          onClose={() => setCustomizing(null)}
+          onAdd={(line) => {
+            cart.add(line);
+            setToast(`${line.menuItemName} ajouté au panier`);
+            window.setTimeout(() => setToast(null), 2600);
+          }}
+        />
+      )}
+
+      {toast && (
+        <p
+          role="status"
+          className="fixed left-1/2 -translate-x-1/2 bottom-24 z-[65] rounded-full bg-fg text-white text-sm px-5 py-2.5 shadow-lg rise"
+        >
+          ✓ {toast}
+        </p>
+      )}
+
+      {cart.itemCount > 0 && (
+        <div className="fixed inset-x-0 bottom-0 z-[60] px-3 pb-3 sm:px-5 sm:pb-5 pointer-events-none">
+          <div className="mx-auto max-w-xl pointer-events-auto flex items-center justify-between gap-3 rounded-full bg-white/90 backdrop-blur-xl border border-white shadow-[0_24px_50px_-20px_rgba(160,72,30,0.6)] pl-6 pr-2 py-2 rise">
+            <p className="text-sm">
+              <span className="font-bold tnum">{cart.itemCount}</span> article{cart.itemCount > 1 ? "s" : ""} ·{" "}
+              <span className="tnum font-bold text-ember">{eur(cart.subtotalCents)}</span>
+            </p>
+            <Link href={orderHref} className="btn btn-primary !py-2.5 !px-6 !text-[0.85rem]">
+              {orderHref.startsWith("/commander") ? "Voir le panier" : "Où commander ?"}
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {showExtras && supplements.length > 0 && (
         <section className="mt-16">
           <div className="flex items-center gap-4 mb-6">
             <h2 className="display text-[clamp(1.5rem,3.6vw,2.1rem)] whitespace-nowrap">Suppléments</h2>
@@ -179,10 +223,11 @@ export function CarteClient({
         </section>
       )}
 
-      <p className="text-xs text-fg-faint mt-10 leading-relaxed">
-        Allergènes : la liste détaillée par recette est en cours de finalisation et sera affichée ici.
-        En attendant, demandez-nous au comptoir — on connaît nos pâtes par cœur.
-      </p>
+      {showExtras && (
+        <p className="text-xs text-fg-faint mt-10 leading-relaxed">
+          Allergènes : liste détaillée bientôt ici. En attendant, demandez-nous au comptoir.
+        </p>
+      )}
     </div>
   );
 }

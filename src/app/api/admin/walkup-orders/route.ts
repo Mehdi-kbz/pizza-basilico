@@ -31,6 +31,8 @@ const bodySchema = z.object({
         sizeId: z.string(),
         quantity: z.number().int().min(1).max(20),
         addedIngredientIds: z.array(z.string()).max(10).optional(),
+        removedIngredientIds: z.array(z.string()).max(30).optional(),
+        note: z.string().max(140).optional(),
       })
     )
     .min(1),
@@ -120,7 +122,9 @@ export async function POST(req: Request) {
           quantity: line.quantity,
           unitPriceCents: line.unitPriceCents,
           capacityWeight: line.capacityWeight,
+          note: line.note,
           addedIngredients: { create: line.addedIngredientIds.map((ingredientId) => ({ ingredientId })) },
+          removedIngredients: { create: line.removedIngredientIds.map((ingredientId) => ({ ingredientId })) },
         })),
       },
     },

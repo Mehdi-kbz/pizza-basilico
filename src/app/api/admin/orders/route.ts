@@ -22,7 +22,7 @@ export async function GET(req: Request) {
         where: { status: { notIn: ["PENDING_PAYMENT", "CANCELLED"] } },
         orderBy: { dailyOrderNumber: "asc" },
         include: {
-          items: { include: { menuItem: true, menuItemSize: true, addedIngredients: { include: { ingredient: true } } } },
+          items: { include: { menuItem: true, menuItemSize: true, addedIngredients: { include: { ingredient: true } }, removedIngredients: { include: { ingredient: true } } } },
         },
       },
     },

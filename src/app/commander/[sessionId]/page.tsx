@@ -42,7 +42,7 @@ export default async function CommanderPage({ params }: { params: Promise<{ sess
         isSpicy: item.isSpicy,
         isNew: item.isNew,
         isSpecialty: item.isSpecialty,
-        composition: item.ingredients.map((l) => l.ingredient.name),
+        ingredients: item.ingredients.map((l) => ({ id: l.ingredient.id, name: l.ingredient.name })),
         sizes: item.sizes.map((s) => ({ id: s.id, label: s.label, priceCents: s.priceCents })),
       })),
     }))

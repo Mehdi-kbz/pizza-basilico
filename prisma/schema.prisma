@@ -371,6 +371,7 @@ model OrderItem {
   menuItemSizeId String?
 
   quantity        Int
+  note            String? // demande spécifique du client pour cet article (ex. « bien cuite »)
   unitPriceCents  Int // prix figé au moment de la commande
   capacityWeight  Int // poids de préparation figé au moment de la commande
 

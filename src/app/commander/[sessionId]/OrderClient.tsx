@@ -4,6 +4,9 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useElements, useStripe } from "@stripe/react-stripe-js";
+import { PizzaPhoto } from "@/components/PizzaPhoto";
+import { CustomizeSheet } from "@/components/CustomizeSheet";
+import { useCart } from "@/lib/cart-store";
 
 interface MenuItemSize {
   id: string;
@@ -18,7 +21,7 @@ interface MenuItem {
   isSpicy: boolean;
   isNew: boolean;
   isSpecialty: boolean;
-  composition: string[];
+  ingredients: { id: string; name: string }[];
   sizes: MenuItemSize[];
 }
 interface Category {
@@ -30,17 +33,6 @@ interface Supplement {
   id: string;
   name: string;
   priceCents: number;
-}
-interface CartLine {
-  key: string;
-  menuItemId: string;
-  menuItemName: string;
-  sizeId: string;
-  sizeLabel: string;
-  quantity: number;
-  addedIngredientIds: string[];
-  addedIngredientNames: string[];
-  unitPriceCents: number;
 }
 interface Loyalty {
   stampCount: number;
@@ -74,7 +66,8 @@ export function OrderClient({
   categories: Category[];
   supplements: Supplement[];
 }) {
-  const [cart, setCart] = useState<CartLine[]>([]);
+  const { lines: cart, changeQty, add: addLine, clear: clearCart } = useCart();
+  const [customizing, setCustomizing] = useState<{ item: MenuItem; category: string } | null>(null);
   const [pickupName, setPickupName] = useState("");
   const [email, setEmail] = useState("");
   const [note, setNote] = useState("");
@@ -87,7 +80,6 @@ export function OrderClient({
   const [submitting, setSubmitting] = useState(false);
   const [loyalty, setLoyalty] = useState<Loyalty | null>(null);
   const [redeemLoyalty, setRedeemLoyalty] = useState(false);
-  const [openExtras, setOpenExtras] = useState<string | null>(null);
 
   const subtotal = useMemo(() => cart.reduce((sum, l) => sum + l.unitPriceCents * l.quantity, 0), [cart]);
 
@@ -110,39 +102,6 @@ export function OrderClient({
     }, 500);
     return () => clearTimeout(handle);
   }, [email]);
-
-  function addToCart(item: MenuItem, size: MenuItemSize, extras: Supplement[]) {
-    const unitPriceCents = size.priceCents + extras.reduce((s, e) => s + e.priceCents, 0);
-    const signature = `${item.id}|${size.id}|${extras.map((e) => e.id).sort().join(",")}`;
-
-    setCart((prev) => {
-      const existing = prev.find((l) => l.key === signature);
-      if (existing) return prev.map((l) => (l.key === signature ? { ...l, quantity: l.quantity + 1 } : l));
-      return [
-        ...prev,
-        {
-          key: signature,
-          menuItemId: item.id,
-          menuItemName: item.name,
-          sizeId: size.id,
-          sizeLabel: size.label,
-          quantity: 1,
-          addedIngredientIds: extras.map((e) => e.id),
-          addedIngredientNames: extras.map((e) => e.name),
-          unitPriceCents,
-        },
-      ];
-    });
-    setOpenExtras(null);
-  }
-
-  function changeQty(key: string, delta: number) {
-    setCart((prev) =>
-      prev
-        .map((l) => (l.key === key ? { ...l, quantity: l.quantity + delta } : l))
-        .filter((l) => l.quantity > 0)
-    );
-  }
 
   async function startCheckout() {
     setError(null);
@@ -168,6 +127,8 @@ export function OrderClient({
             sizeId: l.sizeId,
             quantity: l.quantity,
             addedIngredientIds: l.addedIngredientIds,
+            removedIngredientIds: l.removedIngredientIds,
+            note: l.note || undefined,
           })),
         }),
       });
@@ -176,6 +137,7 @@ export function OrderClient({
         setError(data.error ?? "Une erreur est survenue.");
         return;
       }
+      clearCart();
       setClientSecret(data.clientSecret);
       setTrackingUrl(data.trackingUrl);
       setStep("payment");
@@ -258,12 +220,17 @@ export function OrderClient({
               <ul className="flex flex-col gap-2.5">
                 {cat.items.map((item) => (
                   <li key={item.id} className="card p-4 sm:p-5">
-                    <div className="flex items-start justify-between gap-4">
+                    <div className="flex items-start gap-4">
+                      <PizzaPhoto
+                        name={item.name}
+                        fallback={cat.name === "Boissons" ? "🥤" : cat.name === "Desserts" ? "🍰" : "🍕"}
+                        className="h-16 w-16 shrink-0 rounded-full !object-contain bg-surface-2 text-2xl"
+                      />
                       <div className="min-w-0">
                         <h3 className="display text-[1.2rem] text-fg leading-snug">{item.name}</h3>
-                        {item.composition.length > 0 && (
+                        {item.ingredients.length > 0 && (
                           <p className="text-[0.82rem] text-fg-dim mt-1.5 leading-relaxed">
-                            {item.composition.join(" · ")}
+                            {item.ingredients.map((i) => i.name).join(" · ")}
                           </p>
                         )}
                         {item.description && (
@@ -281,34 +248,18 @@ export function OrderClient({
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-2 mt-4">
-                      {item.sizes.map((size) => (
-                        <button
-                          key={size.id}
-                          onClick={() => addToCart(item, size, [])}
-                          className="btn btn-ghost !py-2 !px-4 !text-[0.82rem] !rounded-lg"
-                        >
-                          <span>
-                            {item.sizes.length > 1 ? `${size.label} · ` : "Ajouter · "}
-                            <span className="tnum text-ember font-semibold">{eur(size.priceCents)}</span>
-                          </span>
-                        </button>
-                      ))}
-
-                      {supplements.length > 0 && (
-                        <button
-                          onClick={() => setOpenExtras(openExtras === item.id ? null : item.id)}
-                          className="text-[0.78rem] text-fg-faint hover:text-ember transition-colors ml-1"
-                          aria-expanded={openExtras === item.id}
-                        >
-                          {openExtras === item.id ? "− suppléments" : "+ suppléments"}
-                        </button>
-                      )}
+                    <div className="flex flex-wrap items-center justify-between gap-3 mt-4">
+                      <p className="tnum text-ember font-bold">
+                        {item.sizes.length > 1 ? "dès " : ""}
+                        {eur(Math.min(...item.sizes.map((z) => z.priceCents)))}
+                      </p>
+                      <button
+                        onClick={() => setCustomizing({ item, category: cat.name })}
+                        className="btn btn-primary !py-2.5 !px-5 !text-[0.82rem]"
+                      >
+                        Ajouter au panier
+                      </button>
                     </div>
-
-                    {openExtras === item.id && (
-                      <ExtrasPicker item={item} supplements={supplements} onAdd={addToCart} />
-                    )}
                   </li>
                 ))}
               </ul>
@@ -355,8 +306,14 @@ export function OrderClient({
                         <span className="text-fg-faint"> · {l.sizeLabel}</span>
                       </p>
                       {l.addedIngredientNames.length > 0 && (
-                        <p className="text-[0.75rem] text-ember/80">+ {l.addedIngredientNames.join(", ")}</p>
+                        <p className="text-[0.75rem] text-ember">+ {l.addedIngredientNames.join(", ")}</p>
                       )}
+                      {l.removedIngredientNames.length > 0 && (
+                        <p className="text-[0.75rem] text-fg-faint">
+                          Sans {l.removedIngredientNames.map((n) => n.toLowerCase()).join(", ")}
+                        </p>
+                      )}
+                      {l.note && <p className="text-[0.75rem] italic text-fg-faint">« {l.note} »</p>}
                     </div>
                     <span className="tnum text-fg shrink-0">{eur(l.unitPriceCents * l.quantity)}</span>
                   </li>
@@ -503,6 +460,16 @@ export function OrderClient({
         </aside>
       </div>
 
+      {customizing && (
+        <CustomizeSheet
+          item={customizing.item}
+          supplements={supplements}
+          fallback={customizing.category === "Boissons" ? "🥤" : customizing.category === "Desserts" ? "🍰" : "🍕"}
+          onClose={() => setCustomizing(null)}
+          onAdd={addLine}
+        />
+      )}
+
       {/* Barre de résumé mobile */}
       {cart.length > 0 && (
         <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 border-t border-line bg-bg/95 backdrop-blur-md px-5 py-3.5">
@@ -525,63 +492,6 @@ export function OrderClient({
 }
 
 /* ------------------------------ Sous-composants ----------------------------- */
-
-function ExtrasPicker({
-  item,
-  supplements,
-  onAdd,
-}: {
-  item: MenuItem;
-  supplements: Supplement[];
-  onAdd: (item: MenuItem, size: MenuItemSize, extras: Supplement[]) => void;
-}) {
-  const [selected, setSelected] = useState<string[]>([]);
-  const [sizeId, setSizeId] = useState(item.sizes[0]?.id);
-  const size = item.sizes.find((s) => s.id === sizeId) ?? item.sizes[0];
-  const extras = supplements.filter((s) => selected.includes(s.id));
-  const extraTotal = extras.reduce((sum, e) => sum + e.priceCents, 0);
-
-  return (
-    <div className="mt-4 pt-4 border-t border-line">
-      <div className="flex flex-wrap gap-2">
-        {supplements.map((s) => {
-          const on = selected.includes(s.id);
-          return (
-            <button
-              key={s.id}
-              onClick={() => setSelected((prev) => (on ? prev.filter((id) => id !== s.id) : [...prev, s.id]))}
-              aria-pressed={on}
-              className={`chip !text-[0.72rem] transition-colors ${on ? "!border-ember !text-ember !bg-flame/10" : ""}`}
-            >
-              {s.name} +{eur(s.priceCents)}
-            </button>
-          );
-        })}
-      </div>
-
-      <div className="flex flex-wrap items-center gap-2 mt-4">
-        {item.sizes.length > 1 &&
-          item.sizes.map((s) => (
-            <button
-              key={s.id}
-              onClick={() => setSizeId(s.id)}
-              aria-pressed={s.id === sizeId}
-              className={`chip !text-[0.72rem] ${s.id === sizeId ? "!border-ember !text-ember !bg-flame/10" : ""}`}
-            >
-              {s.label}
-            </button>
-          ))}
-
-        <button
-          onClick={() => size && onAdd(item, size, extras)}
-          className="btn btn-primary !py-2 !px-4 !text-[0.8rem] ml-auto"
-        >
-          Ajouter · <span className="tnum">{eur((size?.priceCents ?? 0) + extraTotal)}</span>
-        </button>
-      </div>
-    </div>
-  );
-}
 
 function PaymentStep({ totalCents, trackingUrl }: { totalCents: number; trackingUrl: string }) {
   const stripe = useStripe();

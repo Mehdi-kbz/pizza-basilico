@@ -12,6 +12,8 @@ export interface CartItemInput {
   sizeId: string;
   quantity: number;
   addedIngredientIds?: string[];
+  removedIngredientIds?: string[];
+  note?: string;
 }
 
 export interface PricedLine {
@@ -22,6 +24,8 @@ export interface PricedLine {
   unitPriceCents: number;
   capacityWeight: number;
   addedIngredientIds: string[];
+  removedIngredientIds: string[];
+  note: string | null;
   lineTotalCents: number;
 }
 
@@ -65,6 +69,16 @@ export async function priceCart(items: CartItemInput[]): Promise<{
       unitPriceCents += ingredient.priceCents;
     }
 
+    // Un ingrédient retiré doit faire partie de la recette : on ne fait pas confiance au client.
+    const removedIngredientIds = [...new Set(item.removedIngredientIds ?? [])];
+    const recipeIds = new Set(menuItem.ingredients.map((l) => l.ingredientId));
+    for (const ingredientId of removedIngredientIds) {
+      if (!recipeIds.has(ingredientId)) {
+        throw new CartValidationError(`Un ingrédient retiré ne fait pas partie de « ${menuItem.name} ».`);
+      }
+    }
+    const note = item.note?.trim().slice(0, 140) || null;
+
     const lineTotalCents = unitPriceCents * item.quantity;
     subtotalCents += lineTotalCents;
     totalUnits += menuItem.capacityWeight * item.quantity;
@@ -77,6 +91,8 @@ export async function priceCart(items: CartItemInput[]): Promise<{
       unitPriceCents,
       capacityWeight: menuItem.capacityWeight,
       addedIngredientIds,
+      removedIngredientIds,
+      note,
       lineTotalCents,
     });
   }
