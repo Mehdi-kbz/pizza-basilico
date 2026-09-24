@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { isEffectivelyAvailable } from "@/lib/menu-availability";
-import { PizzaHero3D } from "@/components/pizza3d/PizzaHero3D";
+import { PizzaPhoto } from "@/components/PizzaPhoto";
 import { NewsletterForm } from "./NewsletterForm";
 
 export const dynamic = "force-dynamic";
@@ -44,24 +44,13 @@ export default async function HomePage() {
   return (
     <main>
       {/* ------------------------------- HERO ------------------------------- */}
-      <section className="relative overflow-hidden">
-        {/* Lueurs de four */}
-        <div className="ember-glow w-[560px] h-[560px] -top-24 -right-24 md:right-[6%] opacity-90" aria-hidden="true" />
-        <div
-          className="absolute inset-0 -z-10"
-          aria-hidden="true"
-          style={{
-            background:
-              "radial-gradient(1100px 520px at 78% 18%, rgba(255,122,47,0.16), transparent 62%), radial-gradient(700px 400px at 8% 78%, rgba(74,115,52,0.12), transparent 65%)",
-          }}
-        />
-
-        <div className="mx-auto max-w-6xl px-5 lg:px-8 pt-14 pb-8 md:pt-20 md:pb-16">
-          <div className="grid lg:grid-cols-[1.05fr_1fr] gap-8 lg:gap-6 items-center">
+      <section className="mx-auto max-w-6xl px-3 sm:px-5 pt-4">
+        <div className="panel-peach relative overflow-hidden px-6 sm:px-10 lg:px-14 py-12 md:py-16">
+          <div className="grid lg:grid-cols-[1.05fr_1fr] gap-10 items-center">
             <div className="relative z-10">
               <p className="eyebrow rise">Food truck · Pizzas artisanales</p>
 
-              <h1 className="display text-[clamp(2.9rem,8vw,5.4rem)] mt-4 rise rise-1">
+              <h1 className="display text-[clamp(2.8rem,7.4vw,5rem)] mt-4 rise rise-1">
                 Le feu de bois
                 <br />
                 <span className="italic text-ember">change tout.</span>
@@ -88,8 +77,27 @@ export default async function HomePage() {
               </div>
             </div>
 
-            <div className="relative">
-              <PizzaHero3D className="w-full h-[340px] sm:h-[420px] lg:h-[520px]" />
+            <div className="relative grid place-items-center">
+              <div className="relative w-full max-w-[460px] aspect-square">
+                <PizzaPhoto
+                  name="hero"
+                  src="/pizzas/hero.webp"
+                  className="float absolute inset-0 w-full h-full !object-contain drop-shadow-[0_40px_40px_rgba(120,50,20,0.35)]"
+                />
+              </div>
+
+              {openSession && (
+                <Link
+                  href={`/commander/${openSession.id}`}
+                  className="absolute left-0 sm:left-4 bottom-2 flex items-center gap-3 rounded-full bg-white/90 backdrop-blur pl-3 pr-5 py-2.5 shadow-[0_18px_36px_-18px_rgba(160,72,30,0.55)] hover:-translate-y-0.5 transition-transform"
+                >
+                  <span className="grid place-items-center h-9 w-9 rounded-full bg-basil/15 text-basil">●</span>
+                  <span className="text-left leading-tight">
+                    <span className="block text-[0.7rem] font-bold uppercase tracking-wider text-basil">Ouvert</span>
+                    <span className="block text-sm text-fg">{openSession.location.label}</span>
+                  </span>
+                </Link>
+              )}
             </div>
           </div>
         </div>
@@ -104,7 +112,7 @@ export default async function HomePage() {
               Un créneau réel, pas une estimation optimiste.
             </h2>
           </div>
-          <p className="text-sm text-cream-dim max-w-sm leading-relaxed">
+          <p className="text-sm text-fg-dim max-w-sm leading-relaxed">
             Le four a une capacité limitée. Quand un créneau est plein, le site ne vous promet pas
             « tout de suite » : il vous donne l&rsquo;heure à laquelle votre pizza sortira vraiment du four.
           </p>
@@ -128,24 +136,19 @@ export default async function HomePage() {
               text: "Notification dès que c'est prêt. Vous donnez votre nom au comptoir, et c'est tout.",
             },
           ].map((step) => (
-            <li key={step.n} className="card p-6 relative overflow-hidden group">
-              <div
-                className="absolute -right-10 -top-10 w-32 h-32 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-                style={{ background: "radial-gradient(circle, rgba(255,122,47,0.18), transparent 70%)" }}
-                aria-hidden="true"
-              />
-              <span className="display text-4xl text-line-warm">{step.n}</span>
-              <h3 className="display text-xl mt-4 text-cream">{step.title}</h3>
-              <p className="text-sm text-cream-dim mt-2.5 leading-relaxed">{step.text}</p>
+            <li key={step.n} className="card p-7 relative overflow-hidden transition-transform duration-500 hover:-translate-y-1">
+              <span className="grid place-items-center h-11 w-11 rounded-full bg-surface-2 display text-lg text-ember">{step.n}</span>
+              <h3 className="display text-xl mt-4 text-fg">{step.title}</h3>
+              <p className="text-sm text-fg-dim mt-2.5 leading-relaxed">{step.text}</p>
             </li>
           ))}
         </ol>
       </section>
 
       {/* ------------------------------ LA CARTE ----------------------------- */}
-      <section className="relative py-16 md:py-20 border-y border-line bg-char/60">
+      <section className="relative py-16 md:py-20 bg-white/45">
         <div className="mx-auto max-w-6xl px-5 lg:px-8">
-          <div className="flex flex-wrap items-end justify-between gap-4 mb-10">
+          <div className="flex flex-wrap items-end justify-between gap-4 mb-14">
             <div>
               <p className="eyebrow">Nos pizzas</p>
               <h2 className="display text-[clamp(1.9rem,4.4vw,2.9rem)] mt-3">Quelques signatures</h2>
@@ -156,38 +159,39 @@ export default async function HomePage() {
           </div>
 
           {featured.length === 0 ? (
-            <p className="text-cream-dim">La carte arrive très bientôt.</p>
+            <p className="text-fg-dim">La carte arrive très bientôt.</p>
           ) : (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-x-5 gap-y-8 sm:grid-cols-2 lg:grid-cols-3">
               {featured.map((item) => {
                 const min = Math.min(...item.sizes.map((s) => s.priceCents));
                 const multi = item.sizes.length > 1;
                 return (
                   <article
                     key={item.id}
-                    className="card p-5 flex flex-col gap-3 transition-all duration-300 hover:border-line-warm hover:-translate-y-1"
+                    className="card arch !rounded-b-[28px] px-6 pb-6 pt-8 flex flex-col items-center text-center gap-3 transition-all duration-500 hover:-translate-y-1.5 hover:shadow-[var(--shadow-lift)]"
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <h3 className="display text-[1.35rem] text-cream leading-tight">{item.name}</h3>
-                      <p className="tnum text-ember font-semibold whitespace-nowrap text-[0.95rem]">
-                        {multi ? "dès " : ""}
-                        {eur(min)}
-                      </p>
-                    </div>
+                    <PizzaPhoto name={item.name} className="pizza-ring h-40 w-40" />
 
-                    <p className="text-[0.85rem] text-cream-dim leading-relaxed flex-1">
+                    <h3 className="display text-[1.35rem] text-fg leading-tight mt-4">{item.name}</h3>
+
+                    <p className="text-[0.85rem] text-fg-dim leading-relaxed flex-1">
                       {item.ingredients
                         .slice(0, 6)
                         .map((l) => l.ingredient.name)
                         .join(" · ")}
                     </p>
 
-                    <div className="flex flex-wrap gap-1.5">
+                    <div className="flex flex-wrap justify-center gap-1.5">
                       {item.isSpecialty && <span className="chip chip-brass">Spécialité</span>}
                       {item.isNew && <span className="chip chip-flame">Nouveau</span>}
                       {item.isVegetarian && <span className="chip chip-basil">Végétarien</span>}
                       {item.isSpicy && <span className="chip chip-flame">Épicé</span>}
                     </div>
+
+                    <p className="tnum text-ember font-bold text-lg">
+                      {multi ? "dès " : ""}
+                      {eur(min)}
+                    </p>
                   </article>
                 );
               })}
@@ -199,17 +203,11 @@ export default async function HomePage() {
       {/* ---------------------------- NOTRE HISTOIRE -------------------------- */}
       <section className="mx-auto max-w-6xl px-5 lg:px-8 py-16 md:py-24">
         <div className="grid lg:grid-cols-[1fr_1.1fr] gap-10 items-center">
-          <div
-            className="relative aspect-[4/3] rounded-2xl border border-line overflow-hidden"
-            style={{
-              background:
-                "radial-gradient(circle at 30% 25%, rgba(255,140,58,0.22), transparent 55%), linear-gradient(160deg, #221b17, #100c0a)",
-            }}
-          >
+          <div className="panel-peach relative aspect-[4/3] overflow-hidden">
             <div className="absolute inset-0 grid place-items-center p-8 text-center">
               <div>
-                <p className="display text-[clamp(3rem,9vw,5rem)] text-brass leading-none">90s</p>
-                <p className="text-sm text-cream-dim mt-3 max-w-[26ch] mx-auto leading-relaxed">
+                <p className="display text-[clamp(3.4rem,10vw,6rem)] text-ember leading-none">90s</p>
+                <p className="text-sm text-fg-dim mt-3 max-w-[26ch] mx-auto leading-relaxed">
                   Le temps d&rsquo;une cuisson au feu de bois. C&rsquo;est là que tout se joue.
                 </p>
               </div>
@@ -234,15 +232,15 @@ export default async function HomePage() {
       </section>
 
       {/* ---------------------------- NOUS TROUVER --------------------------- */}
-      <section id="nous-trouver" className="relative py-16 md:py-20 border-y border-line bg-char/60 scroll-mt-20">
+      <section id="nous-trouver" className="relative py-16 md:py-20 bg-white/45 scroll-mt-20">
         <div className="mx-auto max-w-6xl px-5 lg:px-8">
           <p className="eyebrow">Nous trouver</p>
           <h2 className="display text-[clamp(1.9rem,4.4vw,2.9rem)] mt-3 mb-9">Le camion cette semaine</h2>
 
           {sessions.length === 0 ? (
             <div className="card p-8 max-w-2xl">
-              <p className="display text-2xl text-cream">Pas de service programmé pour l&rsquo;instant.</p>
-              <p className="text-cream-dim mt-3 leading-relaxed">
+              <p className="display text-2xl text-fg">Pas de service programmé pour l&rsquo;instant.</p>
+              <p className="text-fg-dim mt-3 leading-relaxed">
                 Nos emplacements changent au fil de la semaine. Le prochain est annoncé sur Instagram —
                 ou laissez-nous votre e-mail plus bas, on vous prévient.
               </p>
@@ -261,12 +259,12 @@ export default async function HomePage() {
                 <div key={s.id} className="card p-5 flex flex-col gap-4">
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <p className="display text-xl text-cream capitalize">{formatDay(s.startAt)}</p>
+                      <p className="display text-xl text-fg capitalize">{formatDay(s.startAt)}</p>
                       <p className="tnum text-sm text-ember mt-1">
                         {formatHour(s.startAt)} – {formatHour(s.endAt)}
                       </p>
-                      <p className="text-sm text-cream-dim mt-2.5">{s.location.label}</p>
-                      <p className="text-xs text-cream-faint">{s.location.address}</p>
+                      <p className="text-sm text-fg-dim mt-2.5">{s.location.label}</p>
+                      <p className="text-xs text-fg-faint">{s.location.address}</p>
                     </div>
                     <span className={`chip ${s.isOrderingOpen ? "chip-basil" : ""}`}>
                       {s.isOrderingOpen ? "Commandes ouvertes" : "Commandes fermées"}
@@ -297,14 +295,13 @@ export default async function HomePage() {
 
       {/* ----------------------------- NEWSLETTER ---------------------------- */}
       <section className="mx-auto max-w-6xl px-5 lg:px-8 py-16 md:py-20">
-        <div className="card p-8 md:p-12 relative overflow-hidden">
-          <div className="ember-glow w-[320px] h-[320px] -bottom-32 -right-16 opacity-70" aria-hidden="true" />
+        <div className="panel-peach p-8 md:p-14 relative overflow-hidden">
           <div className="relative max-w-xl">
             <p className="eyebrow">Ne rien manquer</p>
             <h2 className="display text-[clamp(1.7rem,4vw,2.5rem)] mt-3">
               On vous dit où l&rsquo;on s&rsquo;installe.
             </h2>
-            <p className="text-cream-dim mt-3 text-sm leading-relaxed">
+            <p className="text-fg-dim mt-3 text-sm leading-relaxed">
               Les prochains emplacements et les nouveautés de la carte, sans spam. Désinscription en un clic.
             </p>
             <div className="mt-6">
@@ -313,12 +310,12 @@ export default async function HomePage() {
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-4 justify-center mt-10 text-sm text-cream-faint">
-          <Link href="/suivi" className="hover:text-cream-dim transition-colors">
+        <div className="flex flex-wrap gap-4 justify-center mt-10 text-sm text-fg-faint">
+          <Link href="/suivi" className="hover:text-fg-dim transition-colors">
             Suivre une commande en cours
           </Link>
           <span aria-hidden="true">·</span>
-          <Link href="/traiteur" className="hover:text-cream-dim transition-colors">
+          <Link href="/traiteur" className="hover:text-fg-dim transition-colors">
             Privatiser le camion
           </Link>
         </div>

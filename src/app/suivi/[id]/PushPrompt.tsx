@@ -50,8 +50,8 @@ export function PushPrompt({ orderId }: { orderId: string }) {
   return (
     <div className="card p-5 mt-6 flex flex-wrap items-center justify-between gap-4">
       <div>
-        <p className="text-cream text-[0.92rem] font-semibold">Être prévenu·e sans surveiller l&rsquo;écran</p>
-        <p className="text-[0.8rem] text-cream-dim mt-1">
+        <p className="text-fg text-[0.92rem] font-semibold">Être prévenu·e sans surveiller l&rsquo;écran</p>
+        <p className="text-[0.8rem] text-fg-dim mt-1">
           Une notification dès que votre pizza sort du four. Pas de SMS, pas de numéro à donner.
         </p>
       </div>

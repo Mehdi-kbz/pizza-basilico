@@ -26,7 +26,7 @@ export function ConnexionForm() {
     return (
       <div>
         <p className="display text-xl text-basil">Lien envoyé.</p>
-        <p className="text-sm text-cream-dim mt-2.5 leading-relaxed">
+        <p className="text-sm text-fg-dim mt-2.5 leading-relaxed">
           Si cette adresse nous est connue, un e-mail vient de partir avec votre lien de connexion.
           Il est valable 15 minutes.
         </p>
@@ -45,7 +45,7 @@ export function ConnexionForm() {
       )}
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div>
-          <label htmlFor="login-email" className="block text-xs text-cream-dim mb-1.5">
+          <label htmlFor="login-email" className="block text-xs text-fg-dim mb-1.5">
             Votre e-mail
           </label>
           <input

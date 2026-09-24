@@ -31,7 +31,7 @@ export function CateringForm() {
     return (
       <div>
         <p className="display text-xl text-basil">Demande envoyée.</p>
-        <p className="text-sm text-cream-dim mt-2 leading-relaxed">
+        <p className="text-sm text-fg-dim mt-2 leading-relaxed">
           On revient vers vous par e-mail rapidement avec une proposition.
         </p>
       </div>
@@ -41,14 +41,14 @@ export function CateringForm() {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
       <div>
-        <label htmlFor="cat-name" className="block text-xs text-cream-dim mb-1.5">
+        <label htmlFor="cat-name" className="block text-xs text-fg-dim mb-1.5">
           Votre nom
         </label>
         <input id="cat-name" required value={name} onChange={(e) => setName(e.target.value)} className="field" />
       </div>
 
       <div>
-        <label htmlFor="cat-email" className="block text-xs text-cream-dim mb-1.5">
+        <label htmlFor="cat-email" className="block text-xs text-fg-dim mb-1.5">
           E-mail
         </label>
         <input
@@ -62,14 +62,14 @@ export function CateringForm() {
       </div>
 
       <div>
-        <label htmlFor="cat-date" className="block text-xs text-cream-dim mb-1.5">
+        <label htmlFor="cat-date" className="block text-xs text-fg-dim mb-1.5">
           Date de l&rsquo;événement (si connue)
         </label>
         <input id="cat-date" type="date" value={eventDate} onChange={(e) => setEventDate(e.target.value)} className="field" />
       </div>
 
       <div>
-        <label htmlFor="cat-details" className="block text-xs text-cream-dim mb-1.5">
+        <label htmlFor="cat-details" className="block text-xs text-fg-dim mb-1.5">
           Votre projet — lieu, nombre de convives, horaires
         </label>
         <textarea

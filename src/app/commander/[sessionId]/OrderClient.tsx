@@ -192,7 +192,7 @@ export function OrderClient({
       <div className="mx-auto max-w-6xl px-5 lg:px-8 pb-20">
         <div className="card p-8 max-w-xl">
           <p className="display text-2xl">Les commandes sont fermées.</p>
-          <p className="text-cream-dim mt-3 leading-relaxed">
+          <p className="text-fg-dim mt-3 leading-relaxed">
             Le service en cours n&rsquo;accepte plus de nouvelles commandes. Passez directement au
             camion ou consultez les prochains emplacements.
           </p>
@@ -209,12 +209,12 @@ export function OrderClient({
           options={{
             clientSecret,
             appearance: {
-              theme: "night",
+              theme: "stripe",
               variables: {
-                colorPrimary: "#ff7a2f",
-                colorBackground: "#1b1512",
-                colorText: "#f6efe3",
-                colorDanger: "#cf4234",
+                colorPrimary: "#d9441a",
+                colorBackground: "#ffffff",
+                colorText: "#2b1710",
+                colorDanger: "#c53a2c",
                 borderRadius: "10px",
                 fontSizeBase: "15px",
               },
@@ -232,7 +232,7 @@ export function OrderClient({
       <div className="mx-auto max-w-xl px-5 lg:px-8 pb-24">
         <div className="card p-8 border-l-2 border-l-tomato">
           <p className="display text-xl">Paiement indisponible</p>
-          <p className="text-cream-dim mt-3 text-sm leading-relaxed">
+          <p className="text-fg-dim mt-3 text-sm leading-relaxed">
             Le module de paiement n&rsquo;est pas encore configuré sur ce site. Votre commande
             n&rsquo;a pas été enregistrée.
           </p>
@@ -260,14 +260,14 @@ export function OrderClient({
                   <li key={item.id} className="card p-4 sm:p-5">
                     <div className="flex items-start justify-between gap-4">
                       <div className="min-w-0">
-                        <h3 className="display text-[1.2rem] text-cream leading-snug">{item.name}</h3>
+                        <h3 className="display text-[1.2rem] text-fg leading-snug">{item.name}</h3>
                         {item.composition.length > 0 && (
-                          <p className="text-[0.82rem] text-cream-dim mt-1.5 leading-relaxed">
+                          <p className="text-[0.82rem] text-fg-dim mt-1.5 leading-relaxed">
                             {item.composition.join(" · ")}
                           </p>
                         )}
                         {item.description && (
-                          <p className="text-[0.78rem] text-cream-faint italic mt-1">{item.description}</p>
+                          <p className="text-[0.78rem] text-fg-faint italic mt-1">{item.description}</p>
                         )}
                         {tags(item).length > 0 && (
                           <div className="flex flex-wrap gap-1.5 mt-2.5">
@@ -298,7 +298,7 @@ export function OrderClient({
                       {supplements.length > 0 && (
                         <button
                           onClick={() => setOpenExtras(openExtras === item.id ? null : item.id)}
-                          className="text-[0.78rem] text-cream-faint hover:text-ember transition-colors ml-1"
+                          className="text-[0.78rem] text-fg-faint hover:text-ember transition-colors ml-1"
                           aria-expanded={openExtras === item.id}
                         >
                           {openExtras === item.id ? "− suppléments" : "+ suppléments"}
@@ -325,7 +325,7 @@ export function OrderClient({
             </div>
 
             {cart.length === 0 ? (
-              <p className="text-sm text-cream-faint mt-4">
+              <p className="text-sm text-fg-faint mt-4">
                 Votre panier est vide. Choisissez une pizza pour commencer.
               </p>
             ) : (
@@ -335,30 +335,30 @@ export function OrderClient({
                     <div className="flex items-center gap-1.5 shrink-0">
                       <button
                         onClick={() => changeQty(l.key, -1)}
-                        className="w-6 h-6 rounded-md border border-line text-cream-dim hover:border-ember hover:text-ember transition-colors leading-none"
+                        className="w-6 h-6 rounded-md border border-line text-fg-dim hover:border-ember hover:text-ember transition-colors leading-none"
                         aria-label={`Retirer un ${l.menuItemName}`}
                       >
                         −
                       </button>
-                      <span className="tnum w-4 text-center text-cream">{l.quantity}</span>
+                      <span className="tnum w-4 text-center text-fg">{l.quantity}</span>
                       <button
                         onClick={() => changeQty(l.key, 1)}
-                        className="w-6 h-6 rounded-md border border-line text-cream-dim hover:border-ember hover:text-ember transition-colors leading-none"
+                        className="w-6 h-6 rounded-md border border-line text-fg-dim hover:border-ember hover:text-ember transition-colors leading-none"
                         aria-label={`Ajouter un ${l.menuItemName}`}
                       >
                         +
                       </button>
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-cream leading-snug">
+                      <p className="text-fg leading-snug">
                         {l.menuItemName}
-                        <span className="text-cream-faint"> · {l.sizeLabel}</span>
+                        <span className="text-fg-faint"> · {l.sizeLabel}</span>
                       </p>
                       {l.addedIngredientNames.length > 0 && (
                         <p className="text-[0.75rem] text-ember/80">+ {l.addedIngredientNames.join(", ")}</p>
                       )}
                     </div>
-                    <span className="tnum text-cream shrink-0">{eur(l.unitPriceCents * l.quantity)}</span>
+                    <span className="tnum text-fg shrink-0">{eur(l.unitPriceCents * l.quantity)}</span>
                   </li>
                 ))}
               </ul>
@@ -368,7 +368,7 @@ export function OrderClient({
 
             <div className="flex flex-col gap-3">
               <div>
-                <label htmlFor="pickup-name" className="block text-xs text-cream-dim mb-1.5">
+                <label htmlFor="pickup-name" className="block text-xs text-fg-dim mb-1.5">
                   Nom pour le retrait
                 </label>
                 <input
@@ -381,7 +381,7 @@ export function OrderClient({
               </div>
 
               <div>
-                <label htmlFor="order-email" className="block text-xs text-cream-dim mb-1.5">
+                <label htmlFor="order-email" className="block text-xs text-fg-dim mb-1.5">
                   E-mail
                 </label>
                 <input
@@ -395,14 +395,14 @@ export function OrderClient({
               </div>
 
               {loyalty && (
-                <div className="rounded-lg border border-line-warm/70 bg-flame/5 px-3.5 py-3">
+                <div className="rounded-lg border border-line-strong/70 bg-flame/5 px-3.5 py-3">
                   {loyalty.eligibleForFreeItem ? (
-                    <label className="flex items-start gap-2.5 text-[0.82rem] text-cream cursor-pointer">
+                    <label className="flex items-start gap-2.5 text-[0.82rem] text-fg cursor-pointer">
                       <input
                         type="checkbox"
                         checked={redeemLoyalty}
                         onChange={(e) => setRedeemLoyalty(e.target.checked)}
-                        className="mt-0.5 accent-[#ff7a2f]"
+                        className="mt-0.5 accent-[#d9441a]"
                       />
                       <span>
                         <strong className="text-ember">Une pizza offerte vous attend.</strong> L&rsquo;utiliser
@@ -410,7 +410,7 @@ export function OrderClient({
                       </span>
                     </label>
                   ) : (
-                    <p className="text-[0.8rem] text-cream-dim tnum">
+                    <p className="text-[0.8rem] text-fg-dim tnum">
                       {loyalty.stampCount} tampon{loyalty.stampCount > 1 ? "s" : ""} — encore{" "}
                       {loyalty.stampsUntilFree} pour une pizza offerte.
                     </p>
@@ -419,7 +419,7 @@ export function OrderClient({
               )}
 
               <details className="text-sm">
-                <summary className="cursor-pointer text-cream-faint hover:text-cream-dim transition-colors text-[0.82rem]">
+                <summary className="cursor-pointer text-fg-faint hover:text-fg-dim transition-colors text-[0.82rem]">
                   Note, code promo, pourboire
                 </summary>
                 <div className="flex flex-col gap-3 mt-3">
@@ -437,7 +437,7 @@ export function OrderClient({
                     onChange={(e) => setPromoCode(e.target.value)}
                   />
                   <div>
-                    <p className="text-xs text-cream-dim mb-2">Pourboire pour l&rsquo;équipe</p>
+                    <p className="text-xs text-fg-dim mb-2">Pourboire pour l&rsquo;équipe</p>
                     <div className="flex gap-2">
                       {[0, 100, 200, 300].map((c) => (
                         <button
@@ -461,7 +461,7 @@ export function OrderClient({
             <div className="hairline my-5" />
 
             <dl className="flex flex-col gap-1.5 text-sm">
-              <div className="flex justify-between text-cream-dim">
+              <div className="flex justify-between text-fg-dim">
                 <dt>Sous-total</dt>
                 <dd className="tnum">{eur(subtotal)}</dd>
               </div>
@@ -472,13 +472,13 @@ export function OrderClient({
                 </div>
               )}
               {tip > 0 && (
-                <div className="flex justify-between text-cream-dim">
+                <div className="flex justify-between text-fg-dim">
                   <dt>Pourboire</dt>
                   <dd className="tnum">{eur(tip)}</dd>
                 </div>
               )}
               <div className="flex justify-between items-baseline mt-1.5">
-                <dt className="display text-lg text-cream">Total</dt>
+                <dt className="display text-lg text-fg">Total</dt>
                 <dd className="display text-2xl text-ember tnum">{eur(total)}</dd>
               </div>
             </dl>
@@ -495,7 +495,7 @@ export function OrderClient({
               {submitting ? "…" : "Passer au paiement"}
             </button>
 
-            <p className="text-[0.7rem] text-cream-faint mt-3 leading-relaxed">
+            <p className="text-[0.7rem] text-fg-faint mt-3 leading-relaxed">
               Le créneau de retrait vous est confirmé juste après le paiement. Vente à emporter
               uniquement, retrait au camion.
             </p>
@@ -505,10 +505,10 @@ export function OrderClient({
 
       {/* Barre de résumé mobile */}
       {cart.length > 0 && (
-        <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 border-t border-line bg-ink/95 backdrop-blur-md px-5 py-3.5">
+        <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 border-t border-line bg-bg/95 backdrop-blur-md px-5 py-3.5">
           <div className="flex items-center gap-4">
             <div className="min-w-0">
-              <p className="text-[0.7rem] text-cream-faint tnum">{itemCount} article(s)</p>
+              <p className="text-[0.7rem] text-fg-faint tnum">{itemCount} article(s)</p>
               <p className="display text-xl text-ember tnum leading-none">{eur(total)}</p>
             </div>
             <button
@@ -614,7 +614,7 @@ function PaymentStep({ totalCents, trackingUrl }: { totalCents: number; tracking
       <h2 className="display text-[clamp(1.6rem,4vw,2.2rem)] mt-3">
         Paiement · <span className="text-ember tnum">{eur(totalCents)}</span>
       </h2>
-      <p className="text-sm text-cream-dim mt-2 leading-relaxed">
+      <p className="text-sm text-fg-dim mt-2 leading-relaxed">
         Votre créneau est réservé le temps du paiement. Les données de carte ne passent jamais par
         nos serveurs.
       </p>

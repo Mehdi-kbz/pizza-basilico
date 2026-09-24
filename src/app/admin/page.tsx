@@ -27,7 +27,7 @@ export default async function AdminPage() {
       {sessions.length === 0 ? (
         <div className="card p-7">
           <p className="display text-xl">Aucune session active.</p>
-          <p className="text-sm text-cream-dim mt-2.5">
+          <p className="text-sm text-fg-dim mt-2.5">
             Créez une session dans l&rsquo;onglet Sessions pour commencer à recevoir des commandes.
           </p>
         </div>

@@ -57,7 +57,7 @@ export function MenuAvailabilityClient() {
               key={ing.id}
               onClick={() => toggle("ingredient", ing.id, !ing.isAvailable)}
               className={`text-sm rounded-full border px-3 py-1.5 ${
-                ing.isAvailable ? "border-line bg-ash-2" : "border-tomato bg-tomato text-cream"
+                ing.isAvailable ? "border-line bg-surface-3" : "border-tomato bg-tomato text-fg"
               }`}
             >
               {ing.name}
@@ -73,12 +73,12 @@ export function MenuAvailabilityClient() {
         <div className="flex flex-col gap-5">
           {categories.map((cat) => (
             <div key={cat.id}>
-              <h3 className="text-sm font-medium text-cream-dim mb-2">{cat.name}</h3>
+              <h3 className="text-sm font-medium text-fg-dim mb-2">{cat.name}</h3>
               <ul className="flex flex-col gap-1.5">
                 {cat.items.map((item) => (
                   <li
                     key={item.id}
-                    className="flex items-center justify-between border border-line rounded px-3 py-2 bg-char text-sm"
+                    className="flex items-center justify-between border border-line rounded px-3 py-2 bg-surface text-sm"
                   >
                     <span>
                       {item.name}
@@ -91,7 +91,7 @@ export function MenuAvailabilityClient() {
                     <button
                       onClick={() => toggle("item", item.id, !item.isAvailable)}
                       className={`text-xs rounded px-2.5 py-1 border ${
-                        item.isAvailable ? "border-line" : "border-tomato bg-tomato text-cream"
+                        item.isAvailable ? "border-line" : "border-tomato bg-tomato text-fg"
                       }`}
                     >
                       {item.isAvailable ? "Désactiver" : "Réactiver"}

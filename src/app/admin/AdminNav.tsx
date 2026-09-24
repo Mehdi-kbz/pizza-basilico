@@ -22,7 +22,7 @@ export function AdminNav({ current }: { current: AdminTab }) {
           className={`shrink-0 text-[0.82rem] font-medium px-3.5 py-2 rounded-lg border transition-colors ${
             current === tab.key
               ? "border-flame bg-flame/12 text-ember"
-              : "border-line text-cream-dim hover:text-cream hover:border-line-warm"
+              : "border-line text-fg-dim hover:text-fg hover:border-line-strong"
           }`}
         >
           {tab.label}

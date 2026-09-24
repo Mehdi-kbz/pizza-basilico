@@ -11,7 +11,7 @@ const STEPS = [
 ] as const;
 
 const TERMINAL: Record<string, { label: string; text: string; tone: string }> = {
-  PENDING_PAYMENT: { label: "En attente de paiement", text: "Le paiement n'est pas encore confirmé.", tone: "text-cream-dim" },
+  PENDING_PAYMENT: { label: "En attente de paiement", text: "Le paiement n'est pas encore confirmé.", tone: "text-fg-dim" },
   CANCELLED: { label: "Annulée", text: "Cette commande a été annulée.", tone: "text-tomato" },
   REFUNDED: { label: "Remboursée", text: "Cette commande a été remboursée.", tone: "text-tomato" },
   NO_SHOW: { label: "Non récupérée", text: "La commande n'a pas été retirée.", tone: "text-tomato" },
@@ -36,7 +36,7 @@ export function StatusView({ orderId, initialStatus }: { orderId: string; initia
     return (
       <div className="card p-6 text-center">
         <p className={`display text-2xl ${terminal.tone}`}>{terminal.label}</p>
-        <p className="text-sm text-cream-dim mt-2">{terminal.text}</p>
+        <p className="text-sm text-fg-dim mt-2">{terminal.text}</p>
       </div>
     );
   }
@@ -74,16 +74,16 @@ export function StatusView({ orderId, initialStatus }: { orderId: string; initia
                   done
                     ? "bg-flame border-flame"
                     : active
-                      ? "border-ember bg-ink scale-110 shadow-[0_0_0_5px_rgba(255,122,47,0.16)]"
-                      : "border-line bg-ink"
+                      ? "border-ember bg-bg scale-110 shadow-[0_0_0_5px_rgba(255,122,47,0.16)]"
+                      : "border-line bg-bg"
                 }`}
               >
-                {done && <span className="text-[10px] leading-none text-ink font-bold">✓</span>}
+                {done && <span className="text-[10px] leading-none text-bg font-bold">✓</span>}
                 {active && <span className="w-[7px] h-[7px] rounded-full bg-ember animate-pulse" />}
               </span>
               <span
                 className={`text-[0.78rem] leading-tight ${
-                  active ? "text-ember font-semibold" : done ? "text-cream-dim" : "text-cream-faint"
+                  active ? "text-ember font-semibold" : done ? "text-fg-dim" : "text-fg-faint"
                 }`}
               >
                 {step.label}
@@ -94,7 +94,7 @@ export function StatusView({ orderId, initialStatus }: { orderId: string; initia
       </div>
 
       {currentIndex >= 0 && (
-        <p className="relative text-center text-sm text-cream-dim mt-5">
+        <p className="relative text-center text-sm text-fg-dim mt-5">
           {isReady ? (
             <strong className="text-ember display text-lg">Votre commande est prête !</strong>
           ) : (

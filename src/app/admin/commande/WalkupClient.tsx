@@ -106,7 +106,7 @@ export function WalkupClient({
     return (
       <div className="rounded-lg border border-basil bg-basil/10 p-6 text-center">
         <p className="text-2xl font-semibold text-basil">Commande #{success.dailyOrderNumber} enregistrée</p>
-        <p className="text-cream-dim mt-1">{eur(success.totalCents)} — encaisser via le terminal/espèces</p>
+        <p className="text-fg-dim mt-1">{eur(success.totalCents)} — encaisser via le terminal/espèces</p>
         <button onClick={() => setSuccess(null)} className="btn btn-ghost mt-4">
           Nouvelle commande
         </button>
@@ -130,14 +130,14 @@ export function WalkupClient({
 
       {categories.map((cat) => (
         <section key={cat.id}>
-          <h2 className="text-sm font-medium text-cream-dim mb-2">{cat.name}</h2>
+          <h2 className="text-sm font-medium text-fg-dim mb-2">{cat.name}</h2>
           <div className="flex flex-wrap gap-2">
             {cat.items.map((item) =>
               item.sizes.map((size) => (
                 <button
                   key={size.id}
                   onClick={() => addToCart(item, size, [])}
-                  className="text-sm border border-line rounded px-3 py-1.5 bg-char hover:border-basil"
+                  className="text-sm border border-line rounded px-3 py-1.5 bg-surface hover:border-basil"
                 >
                   {item.name} {item.sizes.length > 1 ? `(${size.label})` : ""} — {eur(size.priceCents)}
                 </button>
@@ -147,10 +147,10 @@ export function WalkupClient({
         </section>
       ))}
 
-      <section className="rounded-lg border border-line bg-char p-5">
+      <section className="rounded-lg border border-line bg-surface p-5">
         <h2 className="font-semibold mb-3">Panier</h2>
         {cart.length === 0 ? (
-          <p className="text-sm text-cream-dim">Vide.</p>
+          <p className="text-sm text-fg-dim">Vide.</p>
         ) : (
           <ul className="flex flex-col gap-1 mb-3 text-sm">
             {cart.map((l) => (
@@ -180,7 +180,7 @@ export function WalkupClient({
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
-          <label className="text-xs flex items-center gap-2 text-cream-dim">
+          <label className="text-xs flex items-center gap-2 text-fg-dim">
             <input type="checkbox" checked={override} onChange={(e) => setOverride(e.target.checked)} />
             Forcer même si le créneau affiche complet (je sais qu&rsquo;il y a de la marge)
           </label>

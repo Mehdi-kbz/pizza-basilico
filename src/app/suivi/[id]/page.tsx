@@ -51,20 +51,20 @@ export default async function SuiviPage({
             Commande <span className="text-ember tnum">#{order.dailyOrderNumber}</span>
           </h1>
         </div>
-        <p className="text-sm text-cream-dim mt-3 capitalize">
+        <p className="text-sm text-fg-dim mt-3 capitalize">
           {order.session.location.label} · {dayFmt.format(order.session.startAt)}
         </p>
 
         <div className="card p-5 mt-6 flex items-center justify-between gap-4">
           <div>
-            <p className="text-[0.65rem] uppercase tracking-[0.18em] text-cream-faint">Créneau de retrait</p>
-            <p className="display text-2xl text-cream tnum mt-1">
+            <p className="text-[0.65rem] uppercase tracking-[0.18em] text-fg-faint">Créneau de retrait</p>
+            <p className="display text-2xl text-fg tnum mt-1">
               {timeFmt.format(order.timeSlot.startAt)} – {timeFmt.format(order.timeSlot.endAt)}
             </p>
           </div>
           <div className="text-right">
-            <p className="text-[0.65rem] uppercase tracking-[0.18em] text-cream-faint">Au nom de</p>
-            <p className="display text-xl text-cream mt-1">{order.pickupName}</p>
+            <p className="text-[0.65rem] uppercase tracking-[0.18em] text-fg-faint">Au nom de</p>
+            <p className="display text-xl text-fg mt-1">{order.pickupName}</p>
           </div>
         </div>
 
@@ -80,22 +80,22 @@ export default async function SuiviPage({
             {order.items.map((it) => (
               <li key={it.id} className="flex items-start justify-between gap-4">
                 <span className="min-w-0">
-                  <span className="tnum text-cream-faint">{it.quantity}× </span>
-                  <span className="text-cream">{it.menuItem.name}</span>
-                  {it.menuItemSize && <span className="text-cream-faint"> · {it.menuItemSize.label}</span>}
+                  <span className="tnum text-fg-faint">{it.quantity}× </span>
+                  <span className="text-fg">{it.menuItem.name}</span>
+                  {it.menuItemSize && <span className="text-fg-faint"> · {it.menuItemSize.label}</span>}
                   {it.addedIngredients.length > 0 && (
                     <span className="block text-[0.75rem] text-ember/80">
                       + {it.addedIngredients.map((a) => a.ingredient.name).join(", ")}
                     </span>
                   )}
                 </span>
-                <span className="tnum text-cream-dim shrink-0">{eur(it.unitPriceCents * it.quantity)}</span>
+                <span className="tnum text-fg-dim shrink-0">{eur(it.unitPriceCents * it.quantity)}</span>
               </li>
             ))}
           </ul>
 
           {order.note && (
-            <p className="text-[0.82rem] text-cream-faint italic mt-4 border-l-2 border-line-warm pl-3">
+            <p className="text-[0.82rem] text-fg-faint italic mt-4 border-l-2 border-line-strong pl-3">
               « {order.note} »
             </p>
           )}
@@ -110,7 +110,7 @@ export default async function SuiviPage({
               </div>
             )}
             {order.tipCents > 0 && (
-              <div className="flex justify-between text-cream-dim">
+              <div className="flex justify-between text-fg-dim">
                 <span>Pourboire</span>
                 <span className="tnum">{eur(order.tipCents)}</span>
               </div>
@@ -133,13 +133,13 @@ export default async function SuiviPage({
           </a>
           <a
             href={`mailto:contact@pizza.mehdi.website?subject=${encodeURIComponent(`Problème commande #${order.dailyOrderNumber}`)}`}
-            className="text-cream-faint hover:text-cream-dim transition-colors"
+            className="text-fg-faint hover:text-fg-dim transition-colors"
           >
             Signaler un problème
           </a>
         </div>
 
-        <p className="text-xs text-cream-faint mt-10">
+        <p className="text-xs text-fg-faint mt-10">
           Gardez ce lien : il vous donne accès au suivi en direct.{" "}
           <Link href="/" className="text-ember hover:underline">
             Retour à l&rsquo;accueil

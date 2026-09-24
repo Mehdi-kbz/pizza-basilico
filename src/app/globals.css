@@ -2,36 +2,44 @@
 
 /* ---------------------------------------------------------------------------
    Pizza Basilico — direction artistique
-   Un four à bois la nuit : noirs charbonneux, lueur de braise, basilic frais,
-   laiton pour le palmarès. Parti pris assumé d'un seul univers sombre.
+   Une place de village en fin d'après-midi : fonds pêche crème, cartes blanches
+   très arrondies, ombres douces, un seul accent orange braise, basilic pour le
+   végétarien. Lumineux, calme, tactile.
    --------------------------------------------------------------------------- */
 
 @theme {
-  --color-ink: #0f0b09;
-  --color-char: #171210;
-  --color-ash: #221b17;
-  --color-ash-2: #2c231d;
-  --color-line: #352a23;
-  --color-line-warm: #4a3729;
+  /* Surfaces */
+  --color-bg: #fff6ef;
+  --color-surface: #ffffff;
+  --color-surface-2: #fdebe0;
+  --color-surface-3: #f9dccb;
+  --color-line: #f2dccd;
+  --color-line-strong: #e6bfa8;
 
-  --color-cream: #f6efe3;
-  --color-cream-dim: #b9ab9a;
-  --color-cream-faint: #7d7268;
+  /* Texte */
+  --color-fg: #2b1710;
+  --color-fg-dim: #6a5041;
+  --color-fg-faint: #866a5a;
 
-  --color-flame: #ff7a2f;
-  --color-flame-deep: #d9541a;
-  --color-ember: #ffb066;
-  --color-basil: #82b154;
-  --color-basil-deep: #4a7334;
-  --color-tomato: #cf4234;
-  --color-brass: #d9ad5f;
+  /* Accents */
+  --color-flame: #f26a3d;
+  --color-flame-deep: #d9441a;
+  --color-ember: #c4441a;
+  --color-basil: #3f7a2a;
+  --color-basil-deep: #2f5f20;
+  --color-tomato: #c53a2c;
+  --color-brass: #94650f;
 
-  --font-display: var(--font-bodoni), Georgia, serif;
+  --font-display: var(--font-fraunces), Georgia, serif;
   --font-body: var(--font-manrope), system-ui, sans-serif;
+
+  --radius-card: 28px;
+  --shadow-soft: 0 24px 60px -28px rgba(160, 72, 30, 0.35), 0 2px 6px rgba(160, 72, 30, 0.05);
+  --shadow-lift: 0 34px 70px -28px rgba(160, 72, 30, 0.45), 0 2px 8px rgba(160, 72, 30, 0.06);
 }
 
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 html {
@@ -52,50 +60,43 @@ html {
 }
 
 body {
-  background: var(--color-ink);
-  color: var(--color-cream);
+  background:
+    radial-gradient(900px 520px at 100% 0%, rgba(255, 176, 138, 0.35), transparent 70%),
+    radial-gradient(700px 480px at 0% 30%, rgba(255, 214, 190, 0.45), transparent 70%),
+    var(--color-bg);
+  background-attachment: fixed;
+  color: var(--color-fg);
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
 }
 
 ::selection {
-  background: var(--color-flame-deep);
-  color: var(--color-cream);
-}
-
-/* Grain très léger sur toute la page : évite l'aspect "aplat numérique" */
-body::after {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: 60;
-  pointer-events: none;
-  opacity: 0.035;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+  background: var(--color-flame);
+  color: #fff;
 }
 
 /* --------------------------------- Type --------------------------------- */
 
 .display {
   font-family: var(--font-display);
-  font-weight: 500;
-  letter-spacing: -0.02em;
-  line-height: 0.98;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1.02;
   text-wrap: balance;
 }
 
 .eyebrow {
-  font-size: 0.7rem;
-  letter-spacing: 0.22em;
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--color-ember);
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .lede {
   font-size: 1.05rem;
-  line-height: 1.65;
-  color: var(--color-cream-dim);
+  line-height: 1.7;
+  color: var(--color-fg-dim);
   max-width: 54ch;
 }
 
@@ -106,36 +107,41 @@ body::after {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  padding: 0.85rem 1.6rem;
+  padding: 0.9rem 1.7rem;
   border-radius: 999px;
-  font-weight: 600;
+  font-weight: 700;
   font-size: 0.92rem;
-  letter-spacing: 0.01em;
-  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease,
-    border-color 0.18s ease, color 0.18s ease;
+  letter-spacing: 0.005em;
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.28s ease,
+    background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
   cursor: pointer;
   text-decoration: none;
   border: 1px solid transparent;
 }
 
 .btn-primary {
-  background: linear-gradient(180deg, var(--color-flame) 0%, var(--color-flame-deep) 100%);
-  color: #1a0d05;
-  box-shadow: 0 8px 28px -10px rgba(255, 122, 47, 0.65), inset 0 1px 0 rgba(255, 220, 190, 0.35);
+  background: linear-gradient(180deg, #f4703f 0%, var(--color-flame-deep) 100%);
+  color: #fff;
+  box-shadow: 0 14px 28px -12px rgba(217, 68, 26, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.28);
 }
 .btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 14px 38px -10px rgba(255, 122, 47, 0.8), inset 0 1px 0 rgba(255, 220, 190, 0.5);
+  box-shadow: 0 20px 34px -12px rgba(217, 68, 26, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+.btn-primary:active {
+  transform: translateY(0) scale(0.98);
 }
 
 .btn-ghost {
-  border-color: var(--color-line-warm);
-  color: var(--color-cream);
-  background: rgba(246, 239, 227, 0.02);
+  border-color: var(--color-line-strong);
+  color: var(--color-fg);
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(8px);
 }
 .btn-ghost:hover {
-  border-color: var(--color-ember);
+  border-color: var(--color-flame);
   color: var(--color-ember);
+  background: #fff;
   transform: translateY(-2px);
 }
 
@@ -146,58 +152,60 @@ body::after {
 }
 
 .card {
-  background: linear-gradient(165deg, var(--color-ash) 0%, var(--color-char) 100%);
-  border: 1px solid var(--color-line);
-  border-radius: 14px;
+  background: var(--color-surface);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-soft);
 }
 
 .field {
   width: 100%;
-  background: rgba(15, 11, 9, 0.6);
-  border: 1px solid var(--color-line);
-  border-radius: 10px;
-  padding: 0.75rem 0.95rem;
-  color: var(--color-cream);
+  background: #fff;
+  border: 1px solid var(--color-line-strong);
+  border-radius: 16px;
+  padding: 0.8rem 1rem;
+  color: var(--color-fg);
   font-size: 0.95rem;
   transition: border-color 0.16s ease, box-shadow 0.16s ease;
 }
 .field::placeholder {
-  color: var(--color-cream-faint);
+  color: var(--color-fg-faint);
 }
 .field:focus {
   outline: none;
   border-color: var(--color-flame);
-  box-shadow: 0 0 0 3px rgba(255, 122, 47, 0.16);
+  box-shadow: 0 0 0 4px rgba(242, 106, 61, 0.16);
 }
 
 .chip {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  padding: 0.3rem 0.7rem;
+  padding: 0.3rem 0.75rem;
   border-radius: 999px;
   font-size: 0.7rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
+  font-weight: 700;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
-  border: 1px solid var(--color-line-warm);
-  color: var(--color-cream-dim);
+  border: 1px solid var(--color-line-strong);
+  color: var(--color-fg-dim);
+  background: rgba(255, 255, 255, 0.7);
   white-space: nowrap;
 }
 .chip-flame {
-  border-color: rgba(255, 122, 47, 0.45);
+  border-color: rgba(242, 106, 61, 0.4);
   color: var(--color-ember);
-  background: rgba(255, 122, 47, 0.08);
+  background: rgba(242, 106, 61, 0.1);
 }
 .chip-basil {
-  border-color: rgba(130, 177, 84, 0.4);
+  border-color: rgba(63, 122, 42, 0.35);
   color: var(--color-basil);
-  background: rgba(130, 177, 84, 0.08);
+  background: rgba(63, 122, 42, 0.09);
 }
 .chip-brass {
-  border-color: rgba(217, 173, 95, 0.45);
+  border-color: rgba(148, 101, 15, 0.35);
   color: var(--color-brass);
-  background: rgba(217, 173, 95, 0.08);
+  background: rgba(217, 173, 95, 0.16);
 }
 
 /* Focus clavier visible partout */
@@ -207,23 +215,41 @@ input:focus-visible,
 select:focus-visible,
 textarea:focus-visible,
 summary:focus-visible {
-  outline: 2px solid var(--color-ember);
+  outline: 2px solid var(--color-flame-deep);
   outline-offset: 2px;
-  border-radius: 6px;
+  border-radius: 8px;
 }
 
-/* Lueur de braise réutilisable derrière les éléments chauds */
+/* Halo doux derrière les éléments chauds */
 .ember-glow {
   position: absolute;
   border-radius: 50%;
   filter: blur(70px);
   pointer-events: none;
-  background: radial-gradient(circle, rgba(255, 122, 47, 0.42) 0%, rgba(217, 84, 26, 0.12) 45%, transparent 72%);
+  background: radial-gradient(circle, rgba(255, 150, 100, 0.4) 0%, rgba(255, 190, 150, 0.15) 45%, transparent 72%);
 }
 
 .hairline {
   height: 1px;
-  background: linear-gradient(90deg, transparent, var(--color-line-warm) 18%, var(--color-line-warm) 82%, transparent);
+  background: linear-gradient(90deg, transparent, var(--color-line-strong) 18%, var(--color-line-strong) 82%, transparent);
+}
+
+/* Grand panneau arrondi du hero, dégradé pêche → corail */
+.panel-peach {
+  background:
+    radial-gradient(600px 400px at 85% 20%, rgba(255, 140, 100, 0.5), transparent 70%),
+    linear-gradient(160deg, #ffe9dc 0%, #ffd2bb 100%);
+  border-radius: 40px;
+  box-shadow: var(--shadow-soft);
+}
+
+/* Carte pizza « arche » : sommet arrondi, anneau orange autour de la photo */
+.arch {
+  border-radius: 999px 999px 28px 28px;
+}
+.pizza-ring {
+  border-radius: 50%;
+  box-shadow: 0 0 0 6px #fff, 0 0 0 7px rgba(242, 106, 61, 0.45), 0 24px 40px -18px rgba(120, 50, 20, 0.5);
 }
 
 /* Apparition douce depuis un état déjà lisible (jamais parqué en opacity 0) */
@@ -238,12 +264,20 @@ summary:focus-visible {
   }
 }
 .rise {
-  animation: rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: rise 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 .rise-1 { animation-delay: 0.06s; }
 .rise-2 { animation-delay: 0.14s; }
 .rise-3 { animation-delay: 0.22s; }
 .rise-4 { animation-delay: 0.3s; }
+
+@keyframes float {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-10px) rotate(1.5deg); }
+}
+.float {
+  animation: float 7s ease-in-out infinite;
+}
 
 .tnum {
   font-variant-numeric: tabular-nums;

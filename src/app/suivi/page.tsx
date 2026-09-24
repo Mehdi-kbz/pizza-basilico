@@ -36,14 +36,14 @@ export default function SuiviLookupPage() {
       <div className="mx-auto max-w-md px-5 lg:px-8 pt-16 md:pt-24 pb-24">
         <p className="eyebrow">Suivi</p>
         <h1 className="display text-[clamp(2rem,6vw,3rem)] mt-3">Retrouver ma commande</h1>
-        <p className="text-sm text-cream-dim mt-4 leading-relaxed">
+        <p className="text-sm text-fg-dim mt-4 leading-relaxed">
           Le lien de suivi vous a été envoyé par e-mail. Si vous ne le retrouvez pas, indiquez
           simplement votre adresse et le numéro de commande.
         </p>
 
         <form onSubmit={handleSubmit} className="card p-6 mt-8 flex flex-col gap-4">
           <div>
-            <label htmlFor="track-email" className="block text-xs text-cream-dim mb-1.5">
+            <label htmlFor="track-email" className="block text-xs text-fg-dim mb-1.5">
               E-mail utilisé pour la commande
             </label>
             <input
@@ -58,7 +58,7 @@ export default function SuiviLookupPage() {
           </div>
 
           <div>
-            <label htmlFor="track-number" className="block text-xs text-cream-dim mb-1.5">
+            <label htmlFor="track-number" className="block text-xs text-fg-dim mb-1.5">
               Numéro de commande
             </label>
             <input

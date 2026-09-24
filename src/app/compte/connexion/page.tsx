@@ -14,7 +14,7 @@ export default function ConnexionPage() {
       <div className="mx-auto max-w-md px-5 lg:px-8 pt-16 md:pt-24 pb-24">
         <p className="eyebrow">Mon compte</p>
         <h1 className="display text-[clamp(2rem,6vw,3rem)] mt-3">Pas de mot de passe.</h1>
-        <p className="text-sm text-cream-dim mt-4 leading-relaxed">
+        <p className="text-sm text-fg-dim mt-4 leading-relaxed">
           On vous envoie un lien de connexion par e-mail. Vous y retrouvez votre historique de
           commandes et votre carte de fidélité.
         </p>

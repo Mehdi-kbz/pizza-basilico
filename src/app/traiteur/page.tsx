@@ -41,11 +41,11 @@ export default function TraiteurPage() {
             { title: "Combien de temps à l'avance ?", text: "Le plus tôt possible pour les week-ends de printemps et d'été, qui partent vite." },
           ].map((f) => (
             <div key={f.title} className="card p-5">
-              <h3 className="text-cream font-semibold text-[0.95rem]">{f.title}</h3>
-              <p className="text-sm text-cream-dim mt-2 leading-relaxed">{f.text}</p>
+              <h3 className="text-fg font-semibold text-[0.95rem]">{f.title}</h3>
+              <p className="text-sm text-fg-dim mt-2 leading-relaxed">{f.text}</p>
             </div>
           ))}
-          <p className="text-xs text-cream-faint leading-relaxed px-1">
+          <p className="text-xs text-fg-faint leading-relaxed px-1">
             Vous préférez le téléphone ?{" "}
             <a href="tel:+33645230656" className="text-ember hover:underline tnum">
               06 45 23 06 56

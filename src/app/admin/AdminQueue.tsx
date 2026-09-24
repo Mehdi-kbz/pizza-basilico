@@ -141,7 +141,7 @@ export function AdminQueue({ sessions }: { sessions: { id: string; label: string
               <p className="font-semibold text-ember">🔔 Nouvelle commande #{o.dailyOrderNumber} — {o.pickupName}</p>
               <button
                 onClick={() => acknowledgeAlert(o.id)}
-                className="text-xs bg-tomato text-cream rounded px-3 py-1.5 font-medium"
+                className="text-xs bg-tomato text-fg rounded px-3 py-1.5 font-medium"
               >
                 Vu
               </button>
@@ -164,22 +164,22 @@ export function AdminQueue({ sessions }: { sessions: { id: string; label: string
 
       <div className="flex flex-col gap-6">
         {slots.map((slot) => (
-          <section key={slot.id} className="rounded-lg border border-line bg-char p-4">
+          <section key={slot.id} className="rounded-lg border border-line bg-surface p-4">
             <div className="flex justify-between items-center mb-3">
               <p className="font-medium">
                 {timeFmt(slot.startAt)} – {timeFmt(slot.endAt)}
               </p>
-              <p className="text-xs text-cream-dim">
+              <p className="text-xs text-fg-dim">
                 {slot.unitsCommitted}/{slot.unitsCap} unités · {slot.ordersCommitted}/{slot.ordersCap} commandes
               </p>
             </div>
 
             {slot.orders.length === 0 ? (
-              <p className="text-sm text-cream-dim">Aucune commande.</p>
+              <p className="text-sm text-fg-dim">Aucune commande.</p>
             ) : (
               <ul className="flex flex-col gap-2">
                 {slot.orders.map((o) => (
-                  <li key={o.id} className="border border-line rounded p-3 bg-ash-2">
+                  <li key={o.id} className="border border-line rounded p-3 bg-surface-3">
                     <div className="flex justify-between items-start gap-2">
                       <div>
                         <p className="font-medium">
@@ -190,7 +190,7 @@ export function AdminQueue({ sessions }: { sessions: { id: string; label: string
                             </span>
                           )}
                         </p>
-                        <ul className="text-sm text-cream-dim">
+                        <ul className="text-sm text-fg-dim">
                           {o.items.map((it, idx) => (
                             <li key={idx}>
                               {it.quantity}× {it.menuItem.name} {it.menuItemSize ? `(${it.menuItemSize.label})` : ""}
@@ -200,11 +200,11 @@ export function AdminQueue({ sessions }: { sessions: { id: string; label: string
                             </li>
                           ))}
                         </ul>
-                        {o.note && <p className="text-xs italic text-cream-dim mt-1">« {o.note} »</p>}
+                        {o.note && <p className="text-xs italic text-fg-dim mt-1">« {o.note} »</p>}
                       </div>
                       <div className="text-right shrink-0">
                         <p className="text-sm font-medium">{eur(o.totalCents)}</p>
-                        <p className="text-xs text-cream-dim">{STATUS_LABELS[o.status] ?? o.status}</p>
+                        <p className="text-xs text-fg-dim">{STATUS_LABELS[o.status] ?? o.status}</p>
                       </div>
                     </div>
 
@@ -212,7 +212,7 @@ export function AdminQueue({ sessions }: { sessions: { id: string; label: string
                       {NEXT_STATUS[o.status] && (
                         <button
                           onClick={() => setStatus(o.id, NEXT_STATUS[o.status]!)}
-                          className="text-xs bg-basil-deep text-cream rounded px-2.5 py-1"
+                          className="text-xs bg-basil-deep text-fg rounded px-2.5 py-1"
                         >
                           Marquer « {STATUS_LABELS[NEXT_STATUS[o.status]!]} »
                         </button>

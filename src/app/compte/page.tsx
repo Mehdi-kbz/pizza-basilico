@@ -49,7 +49,7 @@ export default async function ComptePage() {
           <div>
             <p className="eyebrow">Mon compte</p>
             <h1 className="display text-[clamp(2rem,5.5vw,3rem)] mt-3">Bonjour 👋</h1>
-            <p className="text-sm text-cream-dim mt-2">{session.email}</p>
+            <p className="text-sm text-fg-dim mt-2">{session.email}</p>
           </div>
           <LogoutButton />
         </div>
@@ -73,7 +73,7 @@ export default async function ComptePage() {
                   className={`w-9 h-9 rounded-full border grid place-items-center text-xs transition-all ${
                     filled
                       ? "border-flame bg-flame/18 text-ember shadow-[0_0_16px_-4px_rgba(255,122,47,0.6)]"
-                      : "border-line text-line-warm"
+                      : "border-line text-line-strong"
                   }`}
                 >
                   {filled ? "🍕" : i + 1}
@@ -83,7 +83,7 @@ export default async function ComptePage() {
                 className={`w-9 h-9 rounded-full border grid place-items-center text-[0.6rem] font-bold uppercase ${
                   loyalty.eligibleForFreeItem
                     ? "border-brass bg-brass/20 text-brass animate-pulse"
-                    : "border-dashed border-line text-line-warm"
+                    : "border-dashed border-line text-line-strong"
                 }`}
                 aria-hidden="true"
               >
@@ -98,8 +98,8 @@ export default async function ComptePage() {
                   prochaine commande pour l&rsquo;utiliser.
                 </span>
               ) : (
-                <span className="text-cream-dim">
-                  Encore <strong className="text-cream tnum">{loyalty.stampsUntilFree}</strong> pizza(s)
+                <span className="text-fg-dim">
+                  Encore <strong className="text-fg tnum">{loyalty.stampsUntilFree}</strong> pizza(s)
                   et la suivante est offerte. Un tampon par pizza ou panuozzo commandé.
                 </span>
               )}
@@ -116,7 +116,7 @@ export default async function ComptePage() {
 
           {orders.length === 0 ? (
             <div className="card p-7 text-center">
-              <p className="text-cream-dim">Aucune commande pour le moment.</p>
+              <p className="text-fg-dim">Aucune commande pour le moment.</p>
               <Link href="/carte" className="btn btn-primary mt-5">
                 Découvrir la carte
               </Link>
@@ -127,19 +127,19 @@ export default async function ComptePage() {
                 <li key={o.id} className="card p-5">
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0">
-                      <p className="text-cream">
+                      <p className="text-fg">
                         <span className="tnum text-ember font-semibold">#{o.dailyOrderNumber}</span>{" "}
                         · {o.session.location.label}
                       </p>
-                      <p className="text-[0.8rem] text-cream-faint mt-1 tnum">
+                      <p className="text-[0.8rem] text-fg-faint mt-1 tnum">
                         {new Date(o.createdAt).toLocaleDateString("fr-FR")} ·{" "}
                         {STATUS_LABELS[o.status] ?? o.status}
                       </p>
-                      <p className="text-[0.82rem] text-cream-dim mt-2">
+                      <p className="text-[0.82rem] text-fg-dim mt-2">
                         {o.items.map((i) => `${i.quantity}× ${i.menuItem.name}`).join(", ")}
                       </p>
                     </div>
-                    <span className="tnum text-cream shrink-0">{eur(o.totalCents)}</span>
+                    <span className="tnum text-fg shrink-0">{eur(o.totalCents)}</span>
                   </div>
                 </li>
               ))}

@@ -72,7 +72,7 @@ export function PromosClient() {
 
   return (
     <div className="flex flex-col gap-6">
-      <form onSubmit={handleSubmit} className="rounded-lg border border-line bg-char p-5 flex flex-col gap-3">
+      <form onSubmit={handleSubmit} className="rounded-lg border border-line bg-surface p-5 flex flex-col gap-3">
         <h2 className="font-semibold">Nouveau code</h2>
         <input
           className="field uppercase"
@@ -94,7 +94,7 @@ export function PromosClient() {
           />
         </div>
         <div className="grid grid-cols-2 gap-2">
-          <label className="text-xs text-cream-dim">
+          <label className="text-xs text-fg-dim">
             Limite d&rsquo;utilisation (facultatif)
             <input
               type="number"
@@ -104,7 +104,7 @@ export function PromosClient() {
               className="field w-full mt-1"
             />
           </label>
-          <label className="text-xs text-cream-dim">
+          <label className="text-xs text-fg-dim">
             Expiration (facultatif)
             <input
               type="date"
@@ -122,10 +122,10 @@ export function PromosClient() {
 
       <ul className="flex flex-col gap-2">
         {promos.map((p) => (
-          <li key={p.id} className="flex items-center justify-between border border-line rounded p-3 bg-char text-sm">
+          <li key={p.id} className="flex items-center justify-between border border-line rounded p-3 bg-surface text-sm">
             <div>
               <p className="font-medium font-mono">{p.code}</p>
-              <p className="text-cream-dim text-xs">
+              <p className="text-fg-dim text-xs">
                 {p.kind === "PERCENT" ? `${p.value}%` : eur(p.value)}
                 {p.maxUses ? ` · ${p.usesCount}/${p.maxUses} utilisations` : ` · ${p.usesCount} utilisations`}
                 {p.expiresAt ? ` · expire le ${new Date(p.expiresAt).toLocaleDateString("fr-FR")}` : ""}
@@ -133,7 +133,7 @@ export function PromosClient() {
             </div>
             <button
               onClick={() => toggle(p.id, !p.isActive)}
-              className={`text-xs rounded px-2.5 py-1.5 border ${p.isActive ? "border-line" : "border-tomato bg-tomato text-cream"}`}
+              className={`text-xs rounded px-2.5 py-1.5 border ${p.isActive ? "border-line" : "border-tomato bg-tomato text-fg"}`}
             >
               {p.isActive ? "Désactiver" : "Réactiver"}
             </button>

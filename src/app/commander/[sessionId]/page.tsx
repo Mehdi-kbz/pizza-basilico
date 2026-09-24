@@ -60,7 +60,7 @@ export default async function CommanderPage({ params }: { params: Promise<{ sess
       />
 
       <div className="mx-auto max-w-6xl px-5 lg:px-8 pt-10 md:pt-14 pb-4">
-        <Link href="/#nous-trouver" className="text-xs text-cream-faint hover:text-cream-dim transition-colors">
+        <Link href="/#nous-trouver" className="text-xs text-fg-faint hover:text-fg-dim transition-colors">
           ← Tous les emplacements
         </Link>
 
@@ -68,19 +68,19 @@ export default async function CommanderPage({ params }: { params: Promise<{ sess
           <div>
             <p className="eyebrow">Commander · retrait au camion</p>
             <h1 className="display text-[clamp(2rem,5.5vw,3.2rem)] mt-3">{session.location.label}</h1>
-            <p className="text-sm text-cream-dim mt-2 capitalize">
+            <p className="text-sm text-fg-dim mt-2 capitalize">
               {dayFmt.format(session.startAt)} · {timeFmt.format(session.startAt)} – {timeFmt.format(session.endAt)}
             </p>
-            <p className="text-xs text-cream-faint mt-1">{session.location.address}</p>
+            <p className="text-xs text-fg-faint mt-1">{session.location.address}</p>
           </div>
 
           {nextSlot && session.isOrderingOpen && (
             <div className="card px-5 py-4">
-              <p className="text-[0.65rem] uppercase tracking-[0.18em] text-cream-faint">Prochain créneau libre</p>
+              <p className="text-[0.65rem] uppercase tracking-[0.18em] text-fg-faint">Prochain créneau libre</p>
               <p className="display text-2xl text-ember tnum mt-1">
                 {timeFmt.format(nextSlot.startAt)} – {timeFmt.format(nextSlot.endAt)}
               </p>
-              <p className="text-[0.7rem] text-cream-faint mt-1 tnum">
+              <p className="text-[0.7rem] text-fg-faint mt-1 tnum">
                 {nextSlot.unitsCap - nextSlot.unitsCommitted} place(s) restante(s) sur ce créneau
               </p>
             </div>

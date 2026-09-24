@@ -28,39 +28,38 @@ export function SiteHeader() {
   if (pathname.startsWith("/admin")) return null;
 
   return (
-    <header
-      className={`sticky top-0 z-50 transition-colors duration-300 ${
-        scrolled ? "bg-ink/92 backdrop-blur-md border-b border-line" : "bg-transparent"
-      }`}
-    >
-      <div className="mx-auto max-w-6xl px-5 lg:px-8">
-        <div className="flex items-center justify-between h-[68px] gap-4">
-          <Link href="/" className="group flex items-center gap-3 shrink-0" aria-label="Pizza Basilico, accueil">
-            <span className="flex h-[26px] w-[5px] overflow-hidden rounded-full" aria-hidden="true">
-              <span className="w-[5px] bg-basil-deep" />
+    <header className="sticky top-0 z-50 px-3 sm:px-5 pt-3">
+      <div
+        className={`mx-auto max-w-6xl rounded-full border transition-all duration-500 ${
+          scrolled
+            ? "bg-white/80 backdrop-blur-xl border-white shadow-[0_18px_40px_-22px_rgba(160,72,30,0.45)]"
+            : "bg-white/50 backdrop-blur-md border-white/70"
+        }`}
+      >
+        <div className="flex items-center justify-between h-[60px] gap-4 pl-5 pr-2.5">
+          <Link href="/" className="group flex items-center gap-2.5 shrink-0" aria-label="Pizza Basilico, accueil">
+            <span className="grid place-items-center h-8 w-8 rounded-full bg-gradient-to-b from-flame to-flame-deep text-white text-sm shadow-sm" aria-hidden="true">
+              🍕
             </span>
-            <span className="leading-none">
-              <span className="block text-[0.6rem] tracking-[0.3em] uppercase text-ember/80">Pizza</span>
-              <span className="display block text-xl text-cream group-hover:text-ember transition-colors">
-                BASILICO
-              </span>
+            <span className="display text-[1.15rem] text-fg group-hover:text-ember transition-colors">
+              Pizza Basilico
             </span>
           </Link>
 
-          <nav className="hidden md:flex items-center gap-8">
+          <nav className="hidden md:flex items-center gap-1">
             {NAV.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
-                className="text-[0.92rem] text-cream-dim hover:text-cream transition-colors"
+                className="px-4 py-2 rounded-full text-[0.9rem] font-medium text-fg-dim hover:text-fg hover:bg-surface-2 transition-colors"
               >
                 {item.label}
               </Link>
             ))}
           </nav>
 
-          <div className="hidden md:flex items-center gap-3">
-            <Link href="/compte/connexion" className="text-[0.92rem] text-cream-dim hover:text-cream transition-colors">
+          <div className="hidden md:flex items-center gap-2">
+            <Link href="/compte/connexion" className="px-4 py-2 rounded-full text-[0.9rem] font-medium text-fg-dim hover:text-fg transition-colors">
               Mon compte
             </Link>
             <Link href="/carte" className="btn btn-primary !py-2.5 !px-5 !text-[0.85rem]">
@@ -70,33 +69,33 @@ export function SiteHeader() {
 
           <button
             onClick={() => setOpen((v) => !v)}
-            className="md:hidden flex flex-col justify-center gap-[5px] w-10 h-10 items-center rounded-lg border border-line"
+            className="md:hidden flex flex-col justify-center gap-[5px] w-11 h-11 items-center rounded-full bg-surface-2"
             aria-label={open ? "Fermer le menu" : "Ouvrir le menu"}
             aria-expanded={open}
           >
             <span
-              className={`block h-[1.5px] w-5 bg-cream transition-transform duration-200 ${open ? "translate-y-[6.5px] rotate-45" : ""}`}
+              className={`block h-[1.5px] w-5 bg-fg transition-transform duration-200 ${open ? "translate-y-[6.5px] rotate-45" : ""}`}
             />
-            <span className={`block h-[1.5px] w-5 bg-cream transition-opacity duration-200 ${open ? "opacity-0" : ""}`} />
+            <span className={`block h-[1.5px] w-5 bg-fg transition-opacity duration-200 ${open ? "opacity-0" : ""}`} />
             <span
-              className={`block h-[1.5px] w-5 bg-cream transition-transform duration-200 ${open ? "-translate-y-[6.5px] -rotate-45" : ""}`}
+              className={`block h-[1.5px] w-5 bg-fg transition-transform duration-200 ${open ? "-translate-y-[6.5px] -rotate-45" : ""}`}
             />
           </button>
         </div>
       </div>
 
       {open && (
-        <div className="md:hidden border-t border-line bg-ink/97 backdrop-blur-md">
-          <nav className="mx-auto max-w-6xl px-5 py-4 flex flex-col gap-1">
+        <div className="md:hidden mx-auto max-w-6xl mt-2 rounded-[28px] bg-white/95 backdrop-blur-xl border border-white shadow-[0_24px_50px_-24px_rgba(160,72,30,0.5)]">
+          <nav className="px-5 py-3 flex flex-col">
             {NAV.map((item) => (
-              <Link key={item.href} href={item.href} className="py-3 text-cream border-b border-line/60">
+              <Link key={item.href} href={item.href} className="py-3.5 text-fg font-medium border-b border-line">
                 {item.label}
               </Link>
             ))}
-            <Link href="/compte/connexion" className="py-3 text-cream-dim border-b border-line/60">
+            <Link href="/compte/connexion" className="py-3.5 text-fg-dim border-b border-line">
               Mon compte
             </Link>
-            <Link href="/carte" className="btn btn-primary mt-4">
+            <Link href="/carte" className="btn btn-primary my-4">
               Commander
             </Link>
           </nav>

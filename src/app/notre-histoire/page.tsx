@@ -44,13 +44,13 @@ export default function NotreHistoirePage() {
             <h2 className="display text-[clamp(1.6rem,4vw,2.4rem)] mt-5 max-w-[26ch]">
               Plusieurs championnats internationaux de pizza
             </h2>
-            <p className="text-cream-dim mt-4 leading-relaxed max-w-2xl">
+            <p className="text-fg-dim mt-4 leading-relaxed max-w-2xl">
               Se confronter aux meilleurs, c&rsquo;est accepter d&rsquo;être jugé sur des détails que
               personne ne voit : l&rsquo;hydratation de la pâte, la régularité du cornicione, la
               maîtrise d&rsquo;une cuisson qui ne dure qu&rsquo;une minute et demie. Ce niveau
               d&rsquo;exigence, on ne le range pas au placard en rentrant au camion.
             </p>
-            <p className="text-xs text-cream-faint mt-6 border-l-2 border-line-warm pl-4 leading-relaxed">
+            <p className="text-xs text-fg-faint mt-6 border-l-2 border-line-strong pl-4 leading-relaxed">
               Le détail des compétitions, années et classements sera ajouté ici — ainsi que les photos
               de concours.
             </p>
@@ -83,8 +83,8 @@ export default function NotreHistoirePage() {
           ].map((block) => (
             <article key={block.tag} className="card p-6">
               <span className="chip chip-flame">{block.tag}</span>
-              <h3 className="display text-xl mt-4 text-cream">{block.title}</h3>
-              <p className="text-sm text-cream-dim mt-2.5 leading-relaxed">{block.text}</p>
+              <h3 className="display text-xl mt-4 text-fg">{block.title}</h3>
+              <p className="text-sm text-fg-dim mt-2.5 leading-relaxed">{block.text}</p>
             </article>
           ))}
         </div>
@@ -93,7 +93,7 @@ export default function NotreHistoirePage() {
       {/* ------------------------------- Citation ---------------------------- */}
       <section className="mx-auto max-w-3xl px-5 lg:px-8 mt-20 text-center">
         <span className="hairline block mb-10" />
-        <p className="display text-[clamp(1.5rem,4vw,2.3rem)] italic text-cream leading-tight">
+        <p className="display text-[clamp(1.5rem,4vw,2.3rem)] italic text-fg leading-tight">
           « Une bonne pizza, ça ne s&rsquo;improvise pas. Ça se prépare, puis ça se joue en quatre-vingt-dix secondes. »
         </p>
         <span className="hairline block mt-10" />
