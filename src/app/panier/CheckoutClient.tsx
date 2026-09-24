@@ -7,6 +7,7 @@ import { Elements, PaymentElement, useElements, useStripe } from "@stripe/react-
 import { PizzaPhoto } from "@/components/PizzaPhoto";
 import { ConfirmationCard, type ConfirmationItem } from "@/components/ConfirmationCard";
 import { useCart, type CartLine } from "@/lib/cart-store";
+import { UpsellPopup, type UpsellItem } from "./UpsellPopup";
 
 const eur = (cents: number) => (cents / 100).toLocaleString("fr-FR", { style: "currency", currency: "EUR" });
 
@@ -49,8 +50,13 @@ function lineDetails(l: CartLine) {
   return out;
 }
 
-export function CheckoutClient({ session }: { session: SessionInfo | null }) {
-  const { lines, subtotalCents, itemCount, changeQty, clear } = useCart();
+const UPSELL_DELAY_MS = 10_000;
+const UPSELL_SEEN_KEY = "pb-upsell-seen";
+
+export function CheckoutClient({ session, upsell }: { session: SessionInfo | null; upsell: UpsellItem[] }) {
+  const { lines, subtotalCents, itemCount, changeQty, add, clear } = useCart();
+  const [showUpsell, setShowUpsell] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -68,6 +74,44 @@ export function CheckoutClient({ session }: { session: SessionInfo | null }) {
   const paymentRef = useRef<HTMLElement>(null);
 
   const locked = placed !== null;
+
+  // Après 10 s sur le panier : proposition d'un dessert / d'une boisson, une seule fois par visite.
+  const upsellState = useRef({ empty: true, hasDessert: false, hasDrink: false, locked: false });
+  useEffect(() => {
+    const kinds = new Map(upsell.map((u) => [u.id, u.kind]));
+    upsellState.current = {
+      empty: lines.length === 0,
+      hasDessert: lines.some((l) => kinds.get(l.menuItemId) === "dessert"),
+      hasDrink: lines.some((l) => kinds.get(l.menuItemId) === "boisson"),
+      locked,
+    };
+  }, [lines, upsell, locked]);
+
+  useEffect(() => {
+    if (upsell.length === 0) return;
+    try {
+      if (window.sessionStorage.getItem(UPSELL_SEEN_KEY)) return;
+    } catch {
+      // stockage indisponible : on propose quand même, une fois par affichage de la page
+    }
+    const timer = window.setTimeout(() => {
+      const st = upsellState.current;
+      if (st.empty || st.locked || (st.hasDessert && st.hasDrink)) return;
+      setShowUpsell(true);
+      try {
+        window.sessionStorage.setItem(UPSELL_SEEN_KEY, "1");
+      } catch {
+        // sans conséquence
+      }
+    }, UPSELL_DELAY_MS);
+    return () => window.clearTimeout(timer);
+  }, [upsell]);
+
+  // Ne propose que ce qui manque encore au panier (pas de dessert déjà pris, etc.).
+  const upsellItems = upsell.filter((u) => {
+    const inCart = lines.some((l) => l.menuItemId === u.id);
+    return !inCart;
+  });
 
   // Fidélité : consultée dès qu'un e-mail valide est saisi.
   useEffect(() => {
@@ -194,6 +238,24 @@ export function CheckoutClient({ session }: { session: SessionInfo | null }) {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
+  const upsellPopup = showUpsell && !locked && upsellItems.length > 0 && (
+    <UpsellPopup
+      items={upsellItems}
+      onSkip={() => setShowUpsell(false)}
+      onPick={(line) => {
+        add(line);
+        setShowUpsell(false);
+        setToast(`${line.menuItemName} ajouté au panier`);
+        window.setTimeout(() => setToast(null), 2600);
+      }}
+    />
+  );
+  const toastEl = toast && (
+    <p role="status" className="fixed left-1/2 -translate-x-1/2 bottom-24 z-[65] rounded-full bg-fg px-5 py-2.5 text-sm text-white shadow-lg rise">
+      ✓ {toast}
+    </p>
+  );
+
   /* ------------------------------ Commande payée ------------------------------ */
 
   if (done) {
@@ -224,6 +286,8 @@ export function CheckoutClient({ session }: { session: SessionInfo | null }) {
 
   return (
     <div className="mx-auto max-w-2xl px-4 sm:px-5 pt-8 md:pt-12 pb-24">
+      {upsellPopup}
+      {toastEl}
       <Link href="/#pizzas" className="text-sm text-fg-faint hover:text-ember transition-colors">
         ← Ajouter d&rsquo;autres articles
       </Link>

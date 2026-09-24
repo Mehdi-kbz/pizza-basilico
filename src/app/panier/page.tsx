@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/prisma";
+import { getMenuData } from "@/lib/menu-data";
 import { CheckoutClient } from "./CheckoutClient";
+import type { UpsellItem } from "./UpsellPopup";
 
 export const dynamic = "force-dynamic";
 
@@ -11,6 +13,23 @@ const hour = new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-digi
 export default async function PanierPage({ searchParams }: { searchParams: Promise<{ s?: string }> }) {
   const { s } = await searchParams;
   const now = new Date();
+
+  // Desserts (faits maison) et boissons proposés en fin de commande.
+  const { categories } = await getMenuData();
+  const upsell: UpsellItem[] = categories
+    .filter((c) => c.name === "Desserts" || c.name === "Boissons")
+    .flatMap((c) =>
+      c.items
+        .filter((i) => i.sizes.length > 0)
+        .map((i) => ({
+          id: i.id,
+          name: i.name,
+          kind: (c.name === "Desserts" ? "dessert" : "boisson") as UpsellItem["kind"],
+          sizeId: i.sizes[0].id,
+          sizeLabel: i.sizes[0].label,
+          priceCents: i.sizes[0].priceCents,
+        }))
+    );
 
   // Session demandée explicitement (lien / QR code), sinon la prochaine session ouverte aux commandes.
   const session = s
@@ -24,6 +43,7 @@ export default async function PanierPage({ searchParams }: { searchParams: Promi
   return (
     <main>
       <CheckoutClient
+        upsell={upsell}
         session={
           session
             ? {

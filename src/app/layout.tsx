@@ -4,6 +4,7 @@ import "./globals.css";
 import { ServiceWorkerRegister } from "./ServiceWorkerRegister";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
+import { ScrollToTop } from "@/components/ScrollToTop";
 
 const fraunces = Fraunces({
   variable: "--font-fraunces",
@@ -49,6 +50,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <SiteHeader />
         <div className="flex-1 flex flex-col">{children}</div>
         <SiteFooter />
+        <ScrollToTop />
         <ServiceWorkerRegister />
       </body>
     </html>

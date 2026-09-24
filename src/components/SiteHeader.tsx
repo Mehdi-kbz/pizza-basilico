@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
+import { CartButton } from "@/components/CartButton";
 
 const NAV = [
   { href: "/carte", label: "La carte" },
@@ -58,6 +59,7 @@ export function SiteHeader() {
           </nav>
 
           <div className="hidden md:flex items-center gap-2">
+            <CartButton />
             <Link href="/compte/connexion" className="px-4 py-2 rounded-full text-[0.9rem] font-medium text-fg-dim hover:text-fg transition-colors">
               Mon compte
             </Link>
@@ -66,9 +68,11 @@ export function SiteHeader() {
             </Link>
           </div>
 
+          <div className="md:hidden flex items-center gap-1.5">
+          <CartButton />
           <button
             onClick={() => setOpen((v) => !v)}
-            className="md:hidden flex flex-col justify-center gap-[5px] w-11 h-11 items-center rounded-full bg-surface-2"
+            className="flex flex-col justify-center gap-[5px] w-11 h-11 items-center rounded-full bg-surface-2"
             aria-label={open ? "Fermer le menu" : "Ouvrir le menu"}
             aria-expanded={open}
           >
@@ -80,6 +84,7 @@ export function SiteHeader() {
               className={`block h-[1.5px] w-5 bg-fg transition-transform duration-200 ${open ? "-translate-y-[6.5px] -rotate-45" : ""}`}
             />
           </button>
+          </div>
         </div>
       </div>
 
