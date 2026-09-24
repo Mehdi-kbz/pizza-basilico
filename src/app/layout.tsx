@@ -20,17 +20,22 @@ const manrope = Manrope({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://pizza.mehdi.website"),
   title: "Pizza Basilico — Pizzas artisanales au feu de bois",
   description:
     "Food truck de pizzas artisanales cuites au feu de bois. Commandez à l'avance, retirez au camion — sans file d'attente.",
   manifest: "/manifest.json",
   appleWebApp: { capable: true, statusBarStyle: "default", title: "Pizza Basilico" },
-  icons: { icon: "/icons/icon-192.png", apple: "/icons/apple-touch-icon.png" },
+  icons: { icon: [{ url: "/icons/icon-192.png", sizes: "192x192" }, { url: "/favicon-32.png", sizes: "32x32" }], apple: "/icons/apple-touch-icon.png" },
   openGraph: {
     title: "Pizza Basilico — Pizzas artisanales au feu de bois",
     description: "Commandez à l'avance, retirez au camion. Pâte maison, four à bois.",
     type: "website",
+    locale: "fr_FR",
+    siteName: "Pizza Basilico",
+    images: [{ url: "/og.jpg", width: 1200, height: 630, alt: "Pizza Basilico" }],
   },
+  twitter: { card: "summary_large_image", images: ["/og.jpg"] },
 };
 
 export const viewport = {

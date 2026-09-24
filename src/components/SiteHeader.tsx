@@ -38,10 +38,9 @@ export function SiteHeader() {
       >
         <div className="flex items-center justify-between h-[60px] gap-4 pl-5 pr-2.5">
           <Link href="/" className="group flex items-center gap-2.5 shrink-0" aria-label="Pizza Basilico, accueil">
-            <span className="grid place-items-center h-8 w-8 rounded-full bg-gradient-to-b from-flame to-flame-deep text-white text-sm shadow-sm" aria-hidden="true">
-              🍕
-            </span>
-            <span className="display text-[1.15rem] text-fg group-hover:text-ember transition-colors">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.webp" alt="" width={44} height={42} className="h-11 w-auto -my-1 transition-transform group-hover:scale-105" />
+            <span className="display text-[1.1rem] text-fg group-hover:text-ember transition-colors hidden sm:inline">
               Pizza Basilico
             </span>
           </Link>

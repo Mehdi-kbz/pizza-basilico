@@ -12,8 +12,8 @@ export function SiteFooter() {
       <div className="mx-auto max-w-6xl px-5 lg:px-8 py-14">
         <div className="grid gap-10 md:grid-cols-[1.4fr_1fr_1fr]">
           <div>
-            <p className="eyebrow">Pizza</p>
-            <p className="display text-3xl text-fg mt-0.5">BASILICO</p>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.webp" alt="Pizza Basilico" width={110} height={104} className="h-24 w-auto" />
             <p className="text-sm text-fg-dim mt-3 max-w-xs leading-relaxed">
               Pizzas artisanales cuites au feu de bois. Pâte maison, produits frais, cuisson à la commande.
             </p>
