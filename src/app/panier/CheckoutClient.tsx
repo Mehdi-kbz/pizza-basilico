@@ -1,0 +1,566 @@
+"use client";
+
+import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
+import { loadStripe } from "@stripe/stripe-js";
+import { Elements, PaymentElement, useElements, useStripe } from "@stripe/react-stripe-js";
+import { PizzaPhoto } from "@/components/PizzaPhoto";
+import { ConfirmationCard, type ConfirmationItem } from "@/components/ConfirmationCard";
+import { useCart, type CartLine } from "@/lib/cart-store";
+
+const eur = (cents: number) => (cents / 100).toLocaleString("fr-FR", { style: "currency", currency: "EUR" });
+
+const stripePromise = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+  ? loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
+  : null;
+
+interface SessionInfo {
+  id: string;
+  label: string;
+  when: string;
+}
+interface Loyalty {
+  stampCount: number;
+  eligibleForFreeItem: boolean;
+  stampsUntilFree: number;
+}
+interface Placed {
+  clientSecret: string;
+  trackingUrl: string;
+  orderNumber: number;
+  totalCents: number;
+  slot: { start: Date; end: Date } | null;
+}
+interface Done {
+  orderNumber: number;
+  totalCents: number;
+  slot: { start: Date; end: Date } | null;
+  trackingUrl: string;
+  items: ConfirmationItem[];
+  name: string;
+  email: string;
+}
+
+function lineDetails(l: CartLine) {
+  const out: string[] = [];
+  if (l.addedIngredientNames.length) out.push(`+ ${l.addedIngredientNames.join(", ")}`);
+  if (l.removedIngredientNames.length) out.push(`Sans ${l.removedIngredientNames.map((n) => n.toLowerCase()).join(", ")}`);
+  if (l.note) out.push(`« ${l.note} »`);
+  return out;
+}
+
+export function CheckoutClient({ session }: { session: SessionInfo | null }) {
+  const { lines, subtotalCents, itemCount, changeQty, clear } = useCart();
+
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [note, setNote] = useState("");
+  const [tip, setTip] = useState(0);
+  const [promoInput, setPromoInput] = useState("");
+  const [promo, setPromo] = useState<{ code: string; discountCents: number } | null>(null);
+  const [promoError, setPromoError] = useState<string | null>(null);
+  const [loyalty, setLoyalty] = useState<Loyalty | null>(null);
+  const [redeemLoyalty, setRedeemLoyalty] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [placed, setPlaced] = useState<Placed | null>(null);
+  const [done, setDone] = useState<Done | null>(null);
+  const paymentRef = useRef<HTMLElement>(null);
+
+  const locked = placed !== null;
+
+  // Fidélité : consultée dès qu'un e-mail valide est saisi.
+  useEffect(() => {
+    if (!email.includes("@")) return;
+    const handle = setTimeout(async () => {
+      const res = await fetch(`/api/loyalty?email=${encodeURIComponent(email)}`);
+      setLoyalty(res.ok ? await res.json() : null);
+    }, 500);
+    return () => clearTimeout(handle);
+  }, [email]);
+
+  // Le code promo appliqué est recalculé si le panier change.
+  const appliedCode = promo?.code;
+  useEffect(() => {
+    if (!appliedCode) return;
+    let cancelled = false;
+    (async () => {
+      const res = await fetch("/api/promo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: appliedCode, subtotalCents }),
+      });
+      if (cancelled) return;
+      if (res.ok) setPromo({ code: appliedCode, discountCents: (await res.json()).discountCents });
+      else setPromo(null);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [appliedCode, subtotalCents]);
+
+  async function applyPromo() {
+    setPromoError(null);
+    const code = promoInput.trim();
+    if (!code) return;
+    const res = await fetch("/api/promo", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code, subtotalCents }),
+    });
+    const data = await res.json();
+    if (!res.ok) return setPromoError(data.error ?? "Code invalide.");
+    setPromo({ code, discountCents: data.discountCents });
+  }
+
+  const loyaltyDiscount =
+    redeemLoyalty && loyalty?.eligibleForFreeItem && lines.length > 0
+      ? Math.max(...lines.map((l) => l.unitPriceCents))
+      : 0;
+  const discount = (promo?.discountCents ?? 0) + loyaltyDiscount;
+  const total = Math.max(0, subtotalCents - discount) + tip;
+
+  const snapshot = useMemo<ConfirmationItem[]>(
+    () =>
+      lines.map((l) => ({
+        quantity: l.quantity,
+        name: l.menuItemName,
+        size: l.sizeLabel,
+        details: lineDetails(l),
+        lineTotalCents: l.unitPriceCents * l.quantity,
+      })),
+    [lines]
+  );
+
+  async function confirmOrder(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    if (!session) return setError("Aucun service n'accepte de commande pour le moment.");
+    if (lines.length === 0) return setError("Votre panier est vide.");
+    if (!name.trim()) return setError("Indiquez votre prénom : c'est lui que l'on appellera.");
+    if (!/^\S+@\S+\.\S+$/.test(email.trim())) return setError("Indiquez une adresse e-mail pour recevoir votre reçu.");
+
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sessionId: session.id,
+          email: email.trim(),
+          pickupName: name.trim(),
+          note: note.trim() || undefined,
+          tipCents: tip,
+          promoCode: promo?.code,
+          redeemLoyalty: redeemLoyalty && !!loyalty?.eligibleForFreeItem,
+          items: lines.map((l) => ({
+            menuItemId: l.menuItemId,
+            sizeId: l.sizeId,
+            quantity: l.quantity,
+            addedIngredientIds: l.addedIngredientIds,
+            removedIngredientIds: l.removedIngredientIds,
+            note: l.note || undefined,
+          })),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) return setError(data.error ?? "Une erreur est survenue.");
+
+      setPlaced({
+        clientSecret: data.clientSecret,
+        trackingUrl: data.trackingUrl,
+        orderNumber: data.dailyOrderNumber,
+        totalCents: data.totalCents,
+        slot: data.slotStart ? { start: new Date(data.slotStart), end: new Date(data.slotEnd) } : null,
+      });
+      window.setTimeout(() => paymentRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 150);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  function onPaid() {
+    if (!placed) return;
+    setDone({
+      orderNumber: placed.orderNumber,
+      totalCents: placed.totalCents,
+      slot: placed.slot,
+      trackingUrl: placed.trackingUrl,
+      items: snapshot,
+      name: name.trim(),
+      email: email.trim(),
+    });
+    clear();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  /* ------------------------------ Commande payée ------------------------------ */
+
+  if (done) {
+    return (
+      <div className="px-4 pb-20 pt-10 md:pt-14">
+        <ConfirmationCard {...done} />
+      </div>
+    );
+  }
+
+  /* ------------------------------- Panier vide ------------------------------- */
+
+  if (lines.length === 0) {
+    return (
+      <div className="mx-auto max-w-md px-5 pt-16 pb-24 text-center">
+        <p className="text-6xl" aria-hidden="true">
+          🛒
+        </p>
+        <h1 className="display text-3xl mt-5">Votre panier est vide</h1>
+        <Link href="/#pizzas" className="btn btn-primary mt-8">
+          Choisir mes pizzas
+        </Link>
+      </div>
+    );
+  }
+
+  /* ---------------------------------- Panier --------------------------------- */
+
+  return (
+    <div className="mx-auto max-w-2xl px-4 sm:px-5 pt-8 md:pt-12 pb-24">
+      <Link href="/#pizzas" className="text-sm text-fg-faint hover:text-ember transition-colors">
+        ← Ajouter d&rsquo;autres articles
+      </Link>
+      <h1 className="display text-[clamp(2rem,6vw,3rem)] mt-3">Votre panier</h1>
+      {session && (
+        <p className="text-sm text-fg-dim mt-2">
+          📍 {session.label} · <span className="capitalize">{session.when}</span>
+        </p>
+      )}
+
+      <form onSubmit={confirmOrder} className="mt-7 flex flex-col gap-5">
+        {/* Articles */}
+        <section className="card p-4 sm:p-6" aria-label="Articles">
+          <ul className="flex flex-col divide-y divide-line">
+            {lines.map((l) => (
+              <li key={l.key} className="flex items-start gap-3 sm:gap-4 py-4 first:pt-0 last:pb-0">
+                <PizzaPhoto
+                  name={l.menuItemName}
+                  fallback="🍽️"
+                  className="h-16 w-16 shrink-0 rounded-full !object-contain bg-surface-2 text-2xl"
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold leading-snug">
+                    {l.menuItemName} <span className="font-normal text-fg-faint">· {l.sizeLabel}</span>
+                  </p>
+                  {lineDetails(l).map((d) => (
+                    <p key={d} className="text-[0.78rem] text-fg-dim leading-snug mt-0.5">
+                      {d}
+                    </p>
+                  ))}
+                  <div className="mt-2.5 flex items-center gap-1 rounded-full bg-surface-2 p-1 w-fit">
+                    <button
+                      type="button"
+                      disabled={locked}
+                      onClick={() => changeQty(l.key, -1)}
+                      aria-label={l.quantity === 1 ? `Retirer ${l.menuItemName}` : `Une ${l.menuItemName} de moins`}
+                      className="h-8 w-8 rounded-full bg-white leading-none shadow-sm hover:text-ember disabled:opacity-40 transition-colors"
+                    >
+                      {l.quantity === 1 ? "🗑" : "−"}
+                    </button>
+                    <span className="tnum w-6 text-center text-sm font-semibold">{l.quantity}</span>
+                    <button
+                      type="button"
+                      disabled={locked}
+                      onClick={() => changeQty(l.key, 1)}
+                      aria-label={`Une ${l.menuItemName} de plus`}
+                      className="h-8 w-8 rounded-full bg-white leading-none shadow-sm hover:text-ember disabled:opacity-40 transition-colors"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+                <p className="tnum font-semibold shrink-0">{eur(l.unitPriceCents * l.quantity)}</p>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        {/* Nom, e-mail, note, code promo */}
+        <section className="card p-5 sm:p-6 flex flex-col gap-4" aria-label="Vos informations">
+          <div>
+            <label htmlFor="pickup-name" className="block text-sm font-semibold mb-1.5">
+              Votre prénom <span className="text-ember">*</span>
+            </label>
+            <input
+              id="pickup-name"
+              className="field"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              disabled={locked}
+              required
+              maxLength={80}
+              autoComplete="given-name"
+              placeholder="On vous appellera par ce nom"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="order-email" className="block text-sm font-semibold mb-1.5">
+              E-mail <span className="text-ember">*</span>
+            </label>
+            <input
+              id="order-email"
+              type="email"
+              className="field"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              disabled={locked}
+              required
+              autoComplete="email"
+              placeholder="Pour recevoir votre reçu"
+            />
+          </div>
+
+          {loyalty && (
+            <div className="rounded-2xl bg-flame/10 px-4 py-3">
+              {loyalty.eligibleForFreeItem ? (
+                <label className="flex items-start gap-2.5 text-sm cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={redeemLoyalty}
+                    onChange={(e) => setRedeemLoyalty(e.target.checked)}
+                    disabled={locked}
+                    className="mt-0.5 accent-[#d9441a]"
+                  />
+                  <span>
+                    <strong className="text-ember">Une pizza offerte vous attend.</strong> L&rsquo;utiliser (la plus
+                    chère du panier).
+                  </span>
+                </label>
+              ) : (
+                <p className="text-sm text-fg-dim tnum">
+                  🎟️ {loyalty.stampCount} tampon{loyalty.stampCount > 1 ? "s" : ""} — encore {loyalty.stampsUntilFree}{" "}
+                  pour une pizza offerte.
+                </p>
+              )}
+            </div>
+          )}
+
+          <div>
+            <label htmlFor="order-note" className="block text-sm font-semibold mb-1.5">
+              Une note pour la commande
+            </label>
+            <textarea
+              id="order-note"
+              className="field resize-none"
+              rows={2}
+              maxLength={280}
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              disabled={locked}
+              placeholder="Facultatif"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="promo" className="block text-sm font-semibold mb-1.5">
+              Code promo
+            </label>
+            {promo ? (
+              <div className="flex items-center justify-between rounded-2xl bg-basil/10 px-4 py-3 text-sm text-basil">
+                <span>
+                  ✓ <strong className="uppercase">{promo.code}</strong> · −{eur(promo.discountCents)}
+                </span>
+                {!locked && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPromo(null);
+                      setPromoInput("");
+                    }}
+                    className="underline"
+                  >
+                    Retirer
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <input
+                  id="promo"
+                  className="field uppercase"
+                  value={promoInput}
+                  onChange={(e) => setPromoInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      applyPromo();
+                    }
+                  }}
+                  disabled={locked}
+                  placeholder="Facultatif"
+                />
+                <button type="button" onClick={applyPromo} disabled={locked || !promoInput.trim()} className="btn btn-ghost !px-5">
+                  Appliquer
+                </button>
+              </div>
+            )}
+            {promoError && <p className="text-tomato text-sm mt-2">{promoError}</p>}
+          </div>
+
+          <div>
+            <p className="text-sm font-semibold mb-2">Un petit mot pour l&rsquo;équipe ? 🙌</p>
+            <div className="flex flex-wrap gap-2">
+              {[0, 100, 200, 300].map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  disabled={locked}
+                  onClick={() => setTip(c)}
+                  aria-pressed={tip === c}
+                  className={`chip !text-[0.75rem] !px-4 !py-2 transition-colors ${
+                    tip === c ? "!border-ember !text-ember !bg-flame/10" : ""
+                  }`}
+                >
+                  {c === 0 ? "Pas de pourboire" : eur(c)}
+                </button>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Total + confirmation */}
+        <section className="card p-5 sm:p-6" aria-label="Total">
+          <dl className="flex flex-col gap-1.5 text-sm">
+            <div className="flex justify-between text-fg-dim">
+              <dt>Sous-total · {itemCount} article{itemCount > 1 ? "s" : ""}</dt>
+              <dd className="tnum">{eur(subtotalCents)}</dd>
+            </div>
+            {promo && (
+              <div className="flex justify-between text-basil">
+                <dt>Code {promo.code.toUpperCase()}</dt>
+                <dd className="tnum">−{eur(promo.discountCents)}</dd>
+              </div>
+            )}
+            {loyaltyDiscount > 0 && (
+              <div className="flex justify-between text-basil">
+                <dt>Pizza offerte</dt>
+                <dd className="tnum">−{eur(loyaltyDiscount)}</dd>
+              </div>
+            )}
+            {tip > 0 && (
+              <div className="flex justify-between text-fg-dim">
+                <dt>Pourboire</dt>
+                <dd className="tnum">{eur(tip)}</dd>
+              </div>
+            )}
+            <div className="flex justify-between items-baseline mt-2 pt-3 border-t border-line">
+              <dt className="display text-xl">Total</dt>
+              <dd className="display text-3xl text-ember tnum">{eur(total)}</dd>
+            </div>
+          </dl>
+
+          {!session && (
+            <p className="mt-4 rounded-2xl bg-surface-2 px-4 py-3 text-sm text-fg-dim">
+              Aucun service n&rsquo;accepte de commande pour le moment. Votre panier est conservé.
+            </p>
+          )}
+          {error && <p className="text-tomato text-sm mt-4 border-l-2 border-tomato pl-3 leading-relaxed">{error}</p>}
+
+          {locked ? (
+            <button
+              type="button"
+              onClick={() => setPlaced(null)}
+              className="btn btn-ghost w-full mt-5"
+            >
+              ← Modifier ma commande
+            </button>
+          ) : (
+            <button type="submit" disabled={submitting || !session} className="btn btn-primary w-full mt-5 !py-4 !text-base">
+              {submitting ? "Un instant…" : "Confirmer la commande"}
+            </button>
+          )}
+        </section>
+
+        {/* Paiement */}
+        {placed && (
+          <section ref={paymentRef} className="card p-5 sm:p-6 scroll-mt-24 rise" aria-label="Paiement">
+            <p className="eyebrow">Dernière étape</p>
+            <h2 className="display text-[clamp(1.5rem,4vw,2rem)] mt-2">
+              Paiement · <span className="text-ember tnum">{eur(placed.totalCents)}</span>
+            </h2>
+            <p className="text-sm text-fg-dim mt-2">🔒 Votre créneau est réservé le temps du paiement.</p>
+
+            {stripePromise ? (
+              <Elements
+                stripe={stripePromise}
+                options={{
+                  clientSecret: placed.clientSecret,
+                  locale: "fr",
+                  appearance: {
+                    theme: "stripe",
+                    variables: {
+                      colorPrimary: "#d9441a",
+                      colorBackground: "#ffffff",
+                      colorText: "#2b1710",
+                      colorDanger: "#c53a2c",
+                      borderRadius: "16px",
+                      fontSizeBase: "15px",
+                    },
+                  },
+                }}
+              >
+                <PaymentStep totalCents={placed.totalCents} trackingUrl={placed.trackingUrl} onPaid={onPaid} />
+              </Elements>
+            ) : (
+              <p className="mt-5 rounded-2xl bg-surface-2 px-4 py-3 text-sm text-fg-dim">
+                Le paiement en ligne n&rsquo;est pas encore activé sur ce site. Votre commande n&rsquo;est pas
+                confirmée.
+              </p>
+            )}
+          </section>
+        )}
+      </form>
+    </div>
+  );
+}
+
+function PaymentStep({
+  totalCents,
+  trackingUrl,
+  onPaid,
+}: {
+  totalCents: number;
+  trackingUrl: string;
+  onPaid: () => void;
+}) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  async function pay() {
+    if (!stripe || !elements) return;
+    setLoading(true);
+    setError(null);
+    const { error: confirmError } = await stripe.confirmPayment({
+      elements,
+      // Les moyens de paiement avec redirection reviennent sur la page de suivi, qui affiche la confirmation.
+      confirmParams: { return_url: `${window.location.origin}${trackingUrl}&paid=1` },
+      redirect: "if_required",
+    });
+    if (confirmError) {
+      setError(confirmError.message ?? "Le paiement a échoué.");
+      setLoading(false);
+    } else {
+      onPaid();
+    }
+  }
+
+  return (
+    <div className="mt-6">
+      <PaymentElement options={{ layout: { type: "tabs" } }} />
+      {error && <p className="text-tomato text-sm mt-4 border-l-2 border-tomato pl-3">{error}</p>}
+      <button type="button" onClick={pay} disabled={!stripe || loading} className="btn btn-primary w-full mt-6 !py-4 !text-base">
+        {loading ? "Paiement en cours…" : `Payer ${eur(totalCents)}`}
+      </button>
+    </div>
+  );
+}

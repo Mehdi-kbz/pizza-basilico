@@ -48,7 +48,7 @@ export async function getMenuData() {
     categories,
     supplements: supplements.map((s) => ({ id: s.id, name: s.name, priceCents: s.priceCents })),
     sessions,
-    orderHref: openSession ? `/commander/${openSession.id}` : "/#nous-trouver",
+    orderHref: "/panier",
     hasOpenSession: !!openSession,
   };
 }

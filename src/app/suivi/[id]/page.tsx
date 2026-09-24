@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { verifyOrderTrackingToken } from "@/lib/auth";
 import { StatusView } from "./StatusView";
 import { PushPrompt } from "./PushPrompt";
+import { ClearCart } from "./ClearCart";
+import { ConfirmationCard } from "@/components/ConfirmationCard";
 
 export const dynamic = "force-dynamic";
 
@@ -14,10 +16,10 @@ export default async function SuiviPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ t?: string }>;
+  searchParams: Promise<{ t?: string; paid?: string; redirect_status?: string }>;
 }) {
   const { id } = await params;
-  const { t } = await searchParams;
+  const { t, paid, redirect_status } = await searchParams;
 
   if (!t) notFound();
   const payload = verifyOrderTrackingToken(t);
@@ -35,6 +37,38 @@ export default async function SuiviPage({
 
   const timeFmt = new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-digit" });
   const dayFmt = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+
+  // Retour d'un paiement avec redirection : on affiche la carte de confirmation.
+  // (le webhook peut avoir quelques secondes de retard : `redirect_status=succeeded` suffit)
+  const settled = order.status !== "PENDING_PAYMENT" && order.status !== "CANCELLED";
+  if (paid && redirect_status !== "failed" && (redirect_status === "succeeded" || settled)) {
+    return (
+      <main className="px-4 pt-10 md:pt-14 pb-20">
+        <ClearCart />
+        <ConfirmationCard
+          orderNumber={order.dailyOrderNumber}
+          name={order.pickupName}
+          totalCents={order.totalCents}
+          email={order.guestEmail ?? undefined}
+          slot={{ start: order.timeSlot.startAt, end: order.timeSlot.endAt }}
+          trackingUrl={`/suivi/${order.id}?t=${t}`}
+          items={order.items.map((it) => ({
+            quantity: it.quantity,
+            name: it.menuItem.name,
+            size: it.menuItemSize?.label,
+            details: [
+              ...(it.addedIngredients.length ? [`+ ${it.addedIngredients.map((a) => a.ingredient.name).join(", ")}`] : []),
+              ...(it.removedIngredients.length
+                ? [`Sans ${it.removedIngredients.map((a) => a.ingredient.name.toLowerCase()).join(", ")}`]
+                : []),
+              ...(it.note ? [`« ${it.note} »`] : []),
+            ],
+            lineTotalCents: it.unitPriceCents * it.quantity,
+          }))}
+        />
+      </main>
+    );
+  }
 
   return (
     <main className="relative">

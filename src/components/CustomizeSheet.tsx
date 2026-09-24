@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { PizzaPhoto } from "@/components/PizzaPhoto";
+import { ingredientEmoji } from "@/lib/ingredient-emoji";
 import type { CartLine } from "@/lib/cart-store";
 
 export interface SheetItem {
@@ -48,7 +49,10 @@ export function CustomizeSheet({
   const chosenSupplements = supplements.filter((s) => added.has(s.id));
   const unitPrice = (size?.priceCents ?? 0) + chosenSupplements.reduce((n, s) => n + s.priceCents, 0);
 
-  const description = useMemo(() => item.ingredients.map((i) => i.name).join(" · "), [item.ingredients]);
+  const description = useMemo(
+    () => item.ingredients.map((i) => `${ingredientEmoji(i.name)} ${i.name}`).join("  ·  "),
+    [item.ingredients]
+  );
 
   useEffect(() => {
     const previous = document.activeElement as HTMLElement | null;
@@ -164,7 +168,7 @@ export function CustomizeSheet({
                             : "border-line-strong bg-white text-fg-faint line-through"
                         }`}
                       >
-                        <span aria-hidden="true">{on ? "✓ " : "✕ "}</span>
+                        <span aria-hidden="true">{ingredientEmoji(ing.name)} </span>
                         {ing.name}
                       </button>
                     </li>
@@ -192,7 +196,7 @@ export function CustomizeSheet({
                             : "border-line-strong bg-white text-fg-dim hover:border-flame"
                         }`}
                       >
-                        <span aria-hidden="true">{on ? "✓ " : "+ "}</span>
+                        <span aria-hidden="true">{on ? "✓" : ingredientEmoji(sup.name)} </span>
                         {sup.name} <span className="tnum opacity-80">+{eur(sup.priceCents)}</span>
                       </button>
                     </li>

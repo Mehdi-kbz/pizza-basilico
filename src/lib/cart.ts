@@ -103,7 +103,7 @@ export async function priceCart(items: CartItemInput[]): Promise<{
 export async function applyPromoCode(code: string | undefined, subtotalCents: number) {
   if (!code) return { discountCents: 0, promoCodeId: null as string | null };
 
-  const promo = await prisma.promoCode.findUnique({ where: { code } });
+  const promo = await prisma.promoCode.findFirst({ where: { code: { equals: code.trim(), mode: "insensitive" } } });
   if (!promo || !promo.isActive) throw new CartValidationError("Code promo invalide.");
   if (promo.expiresAt && promo.expiresAt < new Date()) throw new CartValidationError("Code promo expiré.");
   if (promo.maxUses !== null && promo.usesCount >= promo.maxUses) {

@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { PizzaPhoto } from "@/components/PizzaPhoto";
 import { CustomizeSheet } from "@/components/CustomizeSheet";
 import { useCart } from "@/lib/cart-store";
+import { ingredientEmoji } from "@/lib/ingredient-emoji";
 
 interface Item {
   id: string;
@@ -127,7 +128,7 @@ export function CarteClient({
 
             {item.ingredients.length > 0 && (
               <p className="text-[0.78rem] text-fg-dim mt-2 leading-relaxed line-clamp-3">
-                {item.ingredients.map((i) => i.name).join(" · ")}
+                {item.ingredients.map((i) => `${ingredientEmoji(i.name)} ${i.name}`).join("  ·  ")}
               </p>
             )}
 
@@ -194,7 +195,7 @@ export function CarteClient({
               <span className="tnum font-bold text-ember">{eur(cart.subtotalCents)}</span>
             </p>
             <Link href={orderHref} className="btn btn-primary !py-2.5 !px-6 !text-[0.85rem]">
-              {orderHref.startsWith("/commander") ? "Voir le panier" : "Où commander ?"}
+              Continuer <span aria-hidden="true">→</span>
             </Link>
           </div>
         </div>

@@ -44,7 +44,18 @@ export async function POST(req: Request) {
 
         const full = await prisma.order.findUnique({
           where: { id: order.id },
-          include: { items: { include: { menuItem: true, menuItemSize: true } } },
+          include: {
+            items: {
+              include: {
+                menuItem: true,
+                menuItemSize: true,
+                addedIngredients: { include: { ingredient: true } },
+                removedIngredients: { include: { ingredient: true } },
+              },
+            },
+            timeSlot: true,
+            session: { include: { location: true } },
+          },
         });
         if (full) {
           await sendOrderConfirmationEmail(full).catch((e) => console.error("Échec d'envoi du reçu :", e));

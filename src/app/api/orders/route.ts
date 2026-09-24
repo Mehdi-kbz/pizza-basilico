@@ -197,6 +197,8 @@ export async function POST(req: Request) {
       orderId: order.id,
       dailyOrderNumber: order.dailyOrderNumber,
       totalCents,
+      slotStart: timeSlot.startAt,
+      slotEnd: timeSlot.endAt,
       clientSecret: payment.clientSecret,
       trackingUrl: `/suivi/${order.id}?t=${trackingToken}`,
     });

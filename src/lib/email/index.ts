@@ -40,25 +40,81 @@ interface OrderForEmail {
   dailyOrderNumber: number;
   pickupName: string;
   totalCents: number;
+  subtotalCents: number;
+  discountCents: number;
+  tipCents: number;
   guestEmail: string;
-  items: { quantity: number; menuItem: { name: string }; menuItemSize: { label: string } | null }[];
+  note: string | null;
+  timeSlot: { startAt: Date; endAt: Date };
+  session: { location: { label: string; address: string } };
+  items: {
+    quantity: number;
+    unitPriceCents: number;
+    note: string | null;
+    menuItem: { name: string };
+    menuItemSize: { label: string } | null;
+    addedIngredients: { ingredient: { name: string } }[];
+    removedIngredients: { ingredient: { name: string } }[];
+  }[];
 }
+
+const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+const hour = new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Paris" });
 
 /** Reçu de commande (§9.3) — envoyé une fois le paiement confirmé (webhook). */
 export async function sendOrderConfirmationEmail(order: OrderForEmail) {
   const itemsHtml = order.items
-    .map((i) => `<li>${i.quantity}× ${i.menuItem.name}${i.menuItemSize ? ` (${i.menuItemSize.label})` : ""}</li>`)
+    .map((i) => {
+      const details = [
+        i.addedIngredients.length ? `+ ${i.addedIngredients.map((a) => esc(a.ingredient.name)).join(", ")}` : "",
+        i.removedIngredients.length
+          ? `Sans ${i.removedIngredients.map((a) => esc(a.ingredient.name.toLowerCase())).join(", ")}`
+          : "",
+        i.note ? `« ${esc(i.note)} »` : "",
+      ].filter(Boolean);
+      return `<tr>
+        <td style="padding:10px 0;border-bottom:1px solid #f2dccd;vertical-align:top;">
+          <strong>${i.quantity}× ${esc(i.menuItem.name)}</strong>${i.menuItemSize ? ` <span style="color:#866a5a;">(${esc(i.menuItemSize.label)})</span>` : ""}
+          ${details.length ? `<div style="font-size:12px;color:#866a5a;margin-top:2px;">${details.join(" · ")}</div>` : ""}
+        </td>
+        <td style="padding:10px 0;border-bottom:1px solid #f2dccd;text-align:right;vertical-align:top;white-space:nowrap;">${eur(i.unitPriceCents * i.quantity)}</td>
+      </tr>`;
+    })
     .join("");
+
+  const extraRow = (label: string, value: string) =>
+    `<tr><td style="padding:3px 0;color:#6a5041;">${label}</td><td style="padding:3px 0;text-align:right;color:#6a5041;">${value}</td></tr>`;
 
   await getEmailProvider().send({
     to: order.guestEmail,
     subject: `Commande #${order.dailyOrderNumber} confirmée — Pizza Basilico`,
-    html: emailShell(
-      `Commande #${order.dailyOrderNumber} confirmée`,
-      `<p>Merci ${order.pickupName} ! Voici le récapitulatif :</p>
-       <ul style="padding-left:18px;">${itemsHtml}</ul>
-       <p style="font-weight:600;">Total : ${eur(order.totalCents)}</p>`
-    ),
+    html: `
+<div style="background:#fff6ef;padding:24px 12px;font-family:-apple-system,'Segoe UI',sans-serif;color:#2b1710;">
+  <div style="max-width:480px;margin:0 auto;background:#fff;border-radius:24px;overflow:hidden;box-shadow:0 12px 40px rgba(160,72,30,.15);">
+    <div style="background:linear-gradient(160deg,#f4703f,#d9441a);padding:28px 24px;text-align:center;color:#fff;">
+      <p style="margin:0;font-size:11px;letter-spacing:.16em;text-transform:uppercase;opacity:.9;">Pizza Basilico</p>
+      <p style="margin:10px 0 0;font-size:44px;font-weight:700;line-height:1;">#${order.dailyOrderNumber}</p>
+      <p style="margin:10px 0 0;font-size:16px;">Merci ${esc(order.pickupName)}, c'est confirmé !</p>
+    </div>
+    <div style="padding:24px;">
+      <p style="margin:0 0 4px;font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:#866a5a;">Retrait</p>
+      <p style="margin:0 0 20px;font-size:16px;">
+        <strong>${hour.format(order.timeSlot.startAt)} – ${hour.format(order.timeSlot.endAt)}</strong><br/>
+        ${esc(order.session.location.label)}<br/>
+        <span style="color:#866a5a;font-size:13px;">${esc(order.session.location.address)}</span>
+      </p>
+      <p style="margin:0 0 4px;font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:#866a5a;">Votre commande</p>
+      <table style="width:100%;border-collapse:collapse;font-size:14px;">${itemsHtml}</table>
+      <table style="width:100%;border-collapse:collapse;font-size:14px;margin-top:10px;">
+        ${order.discountCents > 0 ? extraRow("Réduction", `−${eur(order.discountCents)}`) : ""}
+        ${order.tipCents > 0 ? extraRow("Pourboire", eur(order.tipCents)) : ""}
+        <tr><td style="padding-top:8px;font-size:16px;font-weight:700;">Total payé</td><td style="padding-top:8px;text-align:right;font-size:20px;font-weight:700;color:#c4441a;">${eur(order.totalCents)}</td></tr>
+      </table>
+      ${order.note ? `<p style="margin:18px 0 0;font-size:13px;color:#6a5041;"><strong>Votre note :</strong> ${esc(order.note)}</p>` : ""}
+      <p style="margin:22px 0 0;font-size:13px;color:#866a5a;">Donnez votre nom au comptoir : on vous appellera. À tout de suite !</p>
+    </div>
+  </div>
+</div>`,
   });
 }
 
