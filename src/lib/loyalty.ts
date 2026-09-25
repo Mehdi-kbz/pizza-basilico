@@ -1,13 +1,13 @@
 import { prisma } from "@/lib/prisma";
 
 /**
- * Fidélité — carte à tampons (§8). Un tampon par unité de capacité achetée
- * (chaque pizza/Panuozzo compte, boissons/desserts non — même logique que le
- * moteur de créneaux, §6.3), rédemption active par le client, expiration
+ * Fidélité — carte à tampons (§8). Un tampon par pizza achetée (pizza, Panuozzo,
+ * Plaque : un article = un tampon ; boissons et desserts ne comptent pas),
+ * 10 tampons = 1 pizza offerte, rédemption active par le client, expiration
  * après 90 jours d'inactivité.
  */
 
-export const STAMPS_REQUIRED_FOR_FREE_ITEM = 9;
+export const STAMPS_REQUIRED_FOR_FREE_ITEM = 10;
 export const STAMP_EXPIRY_DAYS = 90;
 
 export interface LoyaltyStatus {

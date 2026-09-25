@@ -118,6 +118,28 @@ export async function sendOrderConfirmationEmail(order: OrderForEmail) {
   });
 }
 
+/** Accusé de réception d'une candidature spontanée. */
+export async function sendApplicationConfirmationEmail(to: string, name: string) {
+  await getEmailProvider().send({
+    to,
+    subject: "Nous avons bien reçu votre candidature — Pizza Basilico",
+    html: `
+<div style="background:#fff6ef;padding:24px 12px;font-family:-apple-system,'Segoe UI',sans-serif;color:#2b1710;">
+  <div style="max-width:480px;margin:0 auto;background:#fff;border-radius:24px;overflow:hidden;box-shadow:0 12px 40px rgba(160,72,30,.15);">
+    <div style="background:linear-gradient(160deg,#f4703f,#d9441a);padding:28px 24px;text-align:center;color:#fff;">
+      <p style="margin:0;font-size:11px;letter-spacing:.16em;text-transform:uppercase;opacity:.9;">Pizza Basilico</p>
+      <p style="margin:12px 0 0;font-size:22px;font-weight:700;">Merci ${esc(name)} !</p>
+    </div>
+    <div style="padding:24px;font-size:15px;line-height:1.6;">
+      <p style="margin:0 0 12px;">Nous avons bien reçu votre candidature et votre CV.</p>
+      <p style="margin:0 0 12px;">L'équipe la lit avec attention. Si votre profil correspond à ce que nous cherchons, nous vous recontactons directement par téléphone ou par e-mail.</p>
+      <p style="margin:0;color:#866a5a;font-size:13px;">À très vite, l'équipe Pizza Basilico 🍕</p>
+    </div>
+  </div>
+</div>`,
+  });
+}
+
 interface DigestData {
   ordersCount: number;
   totalCents: number;

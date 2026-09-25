@@ -114,7 +114,7 @@ export async function POST(req: Request) {
       confirmedAt: new Date(),
       createdByStaffId: staff.sub,
       loyaltyRedeemed: body.redeemLoyalty && loyaltyDiscountCents > 0,
-      loyaltyStampsAwarded: priced.totalUnits,
+      loyaltyStampsAwarded: priced.pizzaCount,
       items: {
         create: priced.lines.map((line) => ({
           menuItemId: line.menuItemId,

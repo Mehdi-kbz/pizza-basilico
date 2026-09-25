@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getMenuData } from "@/lib/menu-data";
 import { PizzaPhoto } from "@/components/PizzaPhoto";
 import { CarteClient } from "./carte/CarteClient";
+import { LoyaltySection } from "@/components/LoyaltySection";
 import { NewsletterForm } from "./NewsletterForm";
 
 export const dynamic = "force-dynamic";
@@ -87,6 +88,9 @@ export default async function HomePage() {
         <CarteClient categories={categories} supplements={supplements} orderHref={orderHref} showExtras={false} />
       </section>
 
+      {/* ------------------------------ FIDÉLITÉ ----------------------------- */}
+      <LoyaltySection />
+
       {/* ------------------------------ PIED DE PAGE ------------------------- */}
       <section className="mx-auto max-w-6xl px-3 sm:px-5 pt-8 pb-4">
         <div className="panel-peach px-6 sm:px-10 py-8 md:py-10 flex flex-wrap items-center justify-between gap-6">
@@ -103,6 +107,8 @@ export default async function HomePage() {
           <Link href="/suivi" className="hover:text-fg-dim transition-colors">Suivre une commande</Link>
           <span aria-hidden="true">·</span>
           <Link href="/traiteur" className="hover:text-fg-dim transition-colors">Privatiser le camion</Link>
+          <span aria-hidden="true">·</span>
+          <Link href="/recrutement" className="hover:text-fg-dim transition-colors">Rejoignez-nous</Link>
         </div>
       </section>
     </main>

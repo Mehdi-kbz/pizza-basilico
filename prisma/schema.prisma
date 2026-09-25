@@ -424,3 +424,31 @@ model CateringInquiry {
 
   @@map("catering_inquiries")
 }
+
+// ---------------------------------------------------------------------------
+// Recrutement — candidatures spontanées (page « Rejoignez-nous »)
+// ---------------------------------------------------------------------------
+
+enum ApplicationStatus {
+  NEW
+  REVIEWED
+  CONTACTED
+  ARCHIVED
+}
+
+model JobApplication {
+  id        String            @id @default(cuid())
+  name      String
+  phone     String
+  email     String
+  message   String?
+  cvFileName String
+  cvMime     String
+  cvSize     Int
+  cvData     Bytes // le CV est stocké en base : sauvegardé avec le reste, aucun volume disque à gérer
+  status    ApplicationStatus @default(NEW)
+  createdAt DateTime          @default(now())
+
+  @@index([status, createdAt])
+  @@map("job_applications")
+}

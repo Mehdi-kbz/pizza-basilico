@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-export type AdminTab = "queue" | "commande" | "sessions" | "menu" | "stats" | "promos";
+export type AdminTab = "queue" | "commande" | "sessions" | "menu" | "stats" | "promos" | "recrutement";
 
 const TABS: { href: string; key: AdminTab; label: string }[] = [
   { href: "/admin", key: "queue", label: "File" },
@@ -8,6 +8,7 @@ const TABS: { href: string; key: AdminTab; label: string }[] = [
   { href: "/admin/sessions", key: "sessions", label: "Sessions" },
   { href: "/admin/menu", key: "menu", label: "Disponibilité" },
   { href: "/admin/promos", key: "promos", label: "Promos" },
+  { href: "/admin/recrutement", key: "recrutement", label: "Recrutement" },
   { href: "/admin/stats", key: "stats", label: "Stats" },
 ];
 

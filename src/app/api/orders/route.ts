@@ -135,7 +135,7 @@ export async function POST(req: Request) {
         holdExpiresAt: computeHoldExpiry(),
         // Fidélité (§8) : figée à la commande, réglée seulement au paiement confirmé (voir webhook)
         loyaltyRedeemed: body.redeemLoyalty,
-        loyaltyStampsAwarded: priced.totalUnits,
+        loyaltyStampsAwarded: priced.pizzaCount,
         items: {
           create: priced.lines.map((line) => ({
             menuItemId: line.menuItemId,

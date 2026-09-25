@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { PaymentBadges } from "@/components/PaymentBadges";
 
 export function SiteFooter() {
   const pathname = usePathname();
@@ -30,6 +31,7 @@ export function SiteFooter() {
             <Link href="/#nous-trouver" className="text-fg-dim hover:text-fg transition-colors">Nous trouver</Link>
             <Link href="/suivi" className="text-fg-dim hover:text-fg transition-colors">Suivre ma commande</Link>
             <Link href="/compte/connexion" className="text-fg-dim hover:text-fg transition-colors">Mon compte</Link>
+            <Link href="/recrutement" className="text-fg-dim hover:text-fg transition-colors">Rejoignez-nous</Link>
           </nav>
 
           <div className="flex flex-col gap-2.5 text-sm">
@@ -61,7 +63,11 @@ export function SiteFooter() {
 
         <div className="hairline my-10" />
 
-        <div className="flex flex-wrap items-center justify-between gap-4 text-xs text-fg-faint">
+        <PaymentBadges />
+
+        <div className="hairline my-10" />
+
+        <div className="flex flex-wrap items-center justify-between gap-4 text-xs text-fg-faint md:pr-16">
           <p>© {new Date().getFullYear()} Pizza Basilico</p>
           <div className="flex gap-5">
             <Link href="/mentions-legales" className="hover:text-fg-dim transition-colors">Mentions légales</Link>

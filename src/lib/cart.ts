@@ -35,12 +35,14 @@ export async function priceCart(items: CartItemInput[]): Promise<{
   lines: PricedLine[];
   subtotalCents: number;
   totalUnits: number;
+  pizzaCount: number;
 }> {
   if (items.length === 0) throw new CartValidationError("Le panier est vide.");
 
   const lines: PricedLine[] = [];
   let subtotalCents = 0;
   let totalUnits = 0;
+  let pizzaCount = 0;
 
   for (const item of items) {
     if (item.quantity < 1) throw new CartValidationError("Quantité invalide.");
@@ -82,6 +84,7 @@ export async function priceCart(items: CartItemInput[]): Promise<{
     const lineTotalCents = unitPriceCents * item.quantity;
     subtotalCents += lineTotalCents;
     totalUnits += menuItem.capacityWeight * item.quantity;
+    if (menuItem.capacityWeight > 0) pizzaCount += item.quantity; // boissons/desserts : poids 0
 
     lines.push({
       menuItemId: menuItem.id,
@@ -97,7 +100,7 @@ export async function priceCart(items: CartItemInput[]): Promise<{
     });
   }
 
-  return { lines, subtotalCents, totalUnits };
+  return { lines, subtotalCents, totalUnits, pizzaCount };
 }
 
 export async function applyPromoCode(code: string | undefined, subtotalCents: number) {
