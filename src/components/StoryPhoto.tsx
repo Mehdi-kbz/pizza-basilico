@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
  * Photo de la page « Notre histoire ». Tant que le fichier n'existe pas dans
  * /public/histoire/, un cadre de remplacement indique quelle photo y sera placée.
  */
-export function StoryPhoto({ file, label, emoji, aspect = "aspect-[4/3]", className = "" }: { file: string; label: string; emoji: string; aspect?: string; className?: string }) {
+export function StoryPhoto({ file, label, emoji, aspect = "aspect-[4/3]", className = "", position = "center" }: { file: string; label: string; emoji: string; aspect?: string; className?: string; position?: string }) {
   const [missing, setMissing] = useState(false);
   const ref = useRef<HTMLImageElement>(null);
 
@@ -28,5 +28,5 @@ export function StoryPhoto({ file, label, emoji, aspect = "aspect-[4/3]", classN
     );
   }
   // eslint-disable-next-line @next/next/no-img-element
-  return <img ref={ref} src={`/histoire/${file}`} alt={label} loading="lazy" onError={() => setMissing(true)} className={`${aspect} ${className} w-full rounded-[32px] object-cover shadow-[0_30px_60px_-30px_rgba(160,72,30,0.5)]`} />;
+  return <img ref={ref} src={`/histoire/${file}`} alt={label} loading="lazy" onError={() => setMissing(true)} style={{ objectPosition: position }} className={`${aspect} ${className} w-full rounded-[32px] object-cover shadow-[0_30px_60px_-30px_rgba(160,72,30,0.5)]`} />;
 }
