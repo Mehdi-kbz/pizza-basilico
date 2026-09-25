@@ -1,33 +1,36 @@
 /**
- * Création manuelle d'un compte personnel (§10.1 — pas d'auto-inscription).
- * Génère aussi le secret 2FA, obligatoire dès la première connexion.
+ * Création (ou réinitialisation) d'un compte personnel — pas d'auto-inscription (§10.1).
+ * Connexion par e-mail + mot de passe ; la double authentification est optionnelle
+ * (voir ADMIN_REQUIRE_2FA dans src/app/api/admin/login/route.ts).
  *
- * Usage : npx tsx scripts/create-staff.ts <email> <mot-de-passe> <OWNER|STAFF>
+ * À lancer DANS le conteneur (la base n'est joignable que depuis le réseau Docker) :
+ *   docker compose exec app npx tsx scripts/create-staff.ts <email> '<mot-de-passe>' <OWNER|STAFF>
  */
 import "dotenv/config";
 import { prisma } from "@/lib/prisma";
-import { hashPassword, generateTotpSecret } from "@/lib/auth";
+import { hashPassword } from "@/lib/auth";
 
 async function main() {
-  const [email, password, role] = process.argv.slice(2);
-  if (!email || !password || (role !== "OWNER" && role !== "STAFF")) {
-    console.error("Usage : npx tsx scripts/create-staff.ts <email> <mot-de-passe> <OWNER|STAFF>");
+  const [rawEmail, password, role] = process.argv.slice(2);
+  if (!rawEmail || !password || (role !== "OWNER" && role !== "STAFF")) {
+    console.error("Usage : npx tsx scripts/create-staff.ts <email> '<mot-de-passe>' <OWNER|STAFF>");
+    process.exit(1);
+  }
+  if (password.length < 8) {
+    console.error("Mot de passe trop court (8 caractères minimum).");
     process.exit(1);
   }
 
+  const email = rawEmail.trim().toLowerCase();
   const passwordHash = await hashPassword(password);
-  const { base32Secret, otpauthUrl } = generateTotpSecret(email);
 
-  const staff = await prisma.staffUser.upsert({
-    where: { email },
-    update: { passwordHash, role, totpSecret: base32Secret, totpEnabled: true, isActive: true },
-    create: { email, passwordHash, role, totpSecret: base32Secret, totpEnabled: true },
-  });
+  const existing = await prisma.staffUser.findFirst({ where: { email: { equals: email, mode: "insensitive" } } });
+  const staff = existing
+    ? await prisma.staffUser.update({ where: { id: existing.id }, data: { passwordHash, role, isActive: true } })
+    : await prisma.staffUser.create({ data: { email, passwordHash, role } });
 
-  console.log(`\nCompte ${role} créé : ${staff.email}`);
-  console.log(`\nÀ scanner dans une application d'authentification (Google Authenticator, 1Password, …) :`);
-  console.log(otpauthUrl);
-  console.log(`\nOu à saisir manuellement, secret : ${base32Secret}\n`);
+  console.log(`\nCompte ${role} ${existing ? "mis à jour" : "créé"} : ${staff.email}`);
+  console.log("Connexion : e-mail + mot de passe sur /admin/login\n");
 }
 
 main()

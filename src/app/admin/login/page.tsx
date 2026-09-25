@@ -8,7 +8,6 @@ export default function AdminLoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [totpCode, setTotpCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -19,7 +18,7 @@ export default function AdminLoginPage() {
     const res = await fetch("/api/admin/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password, totpCode }),
+      body: JSON.stringify({ email, password }),
     });
     setLoading(false);
     if (!res.ok) {
@@ -43,9 +42,9 @@ export default function AdminLoginPage() {
               "radial-gradient(800px 500px at 30% 20%, rgba(255,122,47,0.16), transparent 60%), radial-gradient(600px 400px at 80% 90%, rgba(74,115,52,0.12), transparent 65%)",
           }}
         />
-        <Link href="/" className="group">
-          <p className="text-[0.6rem] tracking-[0.3em] uppercase text-ember/80">Pizza</p>
-          <p className="display text-3xl text-fg group-hover:text-ember transition-colors">BASILICO</p>
+        <Link href="/" className="group" aria-label="Pizza Basilico">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.webp" alt="Pizza Basilico" className="h-24 w-auto" />
         </Link>
 
         <div>
@@ -57,21 +56,21 @@ export default function AdminLoginPage() {
           </p>
         </div>
 
-        <p className="text-xs text-fg-faint">Accès réservé au personnel · double authentification obligatoire</p>
+        <p className="text-xs text-fg-faint">Accès réservé au personnel · connexion sécurisée</p>
       </div>
 
       {/* Volet droit : formulaire */}
       <div className="flex items-center justify-center p-6 sm:p-12">
         <div className="w-full max-w-sm">
-          <div className="lg:hidden mb-10">
-            <p className="text-[0.6rem] tracking-[0.3em] uppercase text-ember/80">Pizza</p>
-            <p className="display text-2xl text-fg">BASILICO</p>
+          <div className="lg:hidden mb-8">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.webp" alt="Pizza Basilico" className="h-20 w-auto" />
           </div>
 
           <p className="eyebrow">Espace personnel</p>
           <h1 className="display text-[clamp(1.9rem,5vw,2.6rem)] mt-3">Connexion</h1>
           <p className="text-sm text-fg-dim mt-3">
-            Mot de passe et code à 6 chiffres de votre application d&rsquo;authentification.
+            Entrez votre e-mail et votre mot de passe.
           </p>
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4 mt-8">
@@ -105,23 +104,6 @@ export default function AdminLoginPage() {
               />
             </div>
 
-            <div>
-              <label htmlFor="admin-totp" className="block text-xs text-fg-dim mb-1.5">
-                Code à 6 chiffres
-              </label>
-              <input
-                id="admin-totp"
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                maxLength={6}
-                required
-                placeholder="000000"
-                className="field tnum tracking-[0.4em] text-center text-lg"
-                value={totpCode}
-                onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, ""))}
-              />
-            </div>
-
             {error && (
               <p className="text-tomato text-sm border-l-2 border-tomato pl-3 leading-relaxed">{error}</p>
             )}
@@ -132,7 +114,7 @@ export default function AdminLoginPage() {
           </form>
 
           <p className="text-xs text-fg-faint mt-8 leading-relaxed">
-            Les comptes sont créés manuellement. Un problème d&rsquo;accès ? Contactez le propriétaire.
+            Un problème d&rsquo;accès ? Contactez le propriétaire.
           </p>
         </div>
       </div>
