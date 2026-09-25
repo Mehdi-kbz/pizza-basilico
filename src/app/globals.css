@@ -514,9 +514,12 @@ summary:focus-visible {
 
 .rv-star {
   position: relative;
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
   flex: none;
+}
+@media (min-width: 768px) {
+  .rv-star { width: 36px; height: 36px; }
 }
 .rv-star svg {
   position: absolute;
@@ -569,7 +572,7 @@ summary:focus-visible {
 @keyframes rv-spark {
   0% { opacity: 0; transform: translateY(0) scale(0.4) rotate(0); }
   15% { opacity: 0.9; }
-  100% { opacity: 0; transform: translateY(-190px) scale(1) rotate(160deg); }
+  100% { opacity: 0; transform: translateY(-230px) scale(1) rotate(160deg); }
 }
 
 .rv-cta::after {
