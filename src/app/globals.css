@@ -370,11 +370,11 @@ summary:focus-visible {
 /* ------------------------------ Carte de fidélité ------------------------------ */
 /* Chronologie (à partir de l'entrée dans l'écran) :
    0 s      les 10 ronds apparaissent en cascade
-   0.4 s    les 8 premières croix se dessinent l'une après l'autre
-   2.6 s    9e rond : halo + croix tracée lentement
-   3.9 s    10e rond : idem
-   5.0 s    la pizza apparaît en zoom (flou → net), puis flotte doucement
-   6.2 s    l'étiquette « pizza offerte » se glisse en place                */
+   0.25 s   les 8 premières croix se dessinent l'une après l'autre
+   1.5 s    9e rond : halo + croix
+   2.35 s   10e rond : idem
+   3.1 s    la pizza apparaît en zoom (flou → net), puis flotte doucement
+   3.9 s    l'étiquette « pizza offerte » se glisse en place                */
 
 .loy-dot {
   position: relative;
@@ -386,7 +386,7 @@ summary:focus-visible {
   transform: scale(0.6);
 }
 .loy-play .loy-dot {
-  animation: loy-dot-in 0.7s calc(var(--i) * 0.045s) cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: loy-dot-in 0.45s calc(var(--i) * 0.03s) cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 @keyframes loy-dot-in {
   to { opacity: 1; transform: scale(1); }
@@ -401,17 +401,17 @@ summary:focus-visible {
   stroke-dashoffset: 34;
 }
 .loy-play .loy-cross path:nth-child(1) {
-  animation: loy-draw 0.32s calc(var(--d) * 1s) cubic-bezier(0.65, 0, 0.35, 1) forwards;
+  animation: loy-draw 0.22s calc(var(--d) * 1s) cubic-bezier(0.65, 0, 0.35, 1) forwards;
 }
 .loy-play .loy-cross path:nth-child(2) {
-  animation: loy-draw 0.32s calc(var(--d) * 1s + 0.2s) cubic-bezier(0.65, 0, 0.35, 1) forwards;
+  animation: loy-draw 0.22s calc(var(--d) * 1s + 0.13s) cubic-bezier(0.65, 0, 0.35, 1) forwards;
 }
 .loy-play .loy-big .loy-cross path:nth-child(1) {
-  animation-duration: 0.7s;
+  animation-duration: 0.42s;
 }
 .loy-play .loy-big .loy-cross path:nth-child(2) {
-  animation-duration: 0.7s;
-  animation-delay: calc(var(--d) * 1s + 0.55s);
+  animation-duration: 0.42s;
+  animation-delay: calc(var(--d) * 1s + 0.34s);
 }
 @keyframes loy-draw {
   to { stroke-dashoffset: 0; }
@@ -419,8 +419,8 @@ summary:focus-visible {
 
 /* Les deux derniers ronds : petit « rebond » et halo qui s'étend */
 .loy-play .loy-big {
-  animation: loy-dot-in 0.7s calc(var(--i) * 0.045s) cubic-bezier(0.22, 1, 0.36, 1) forwards,
-    loy-pop 1s calc(var(--d) * 1s) cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation: loy-dot-in 0.45s calc(var(--i) * 0.03s) cubic-bezier(0.22, 1, 0.36, 1) forwards,
+    loy-pop 0.65s calc(var(--d) * 1s) cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 @keyframes loy-pop {
   0% { transform: scale(1); }
@@ -437,7 +437,7 @@ summary:focus-visible {
   pointer-events: none;
 }
 .loy-play .loy-big::after {
-  animation: loy-ring 1.5s calc(var(--d) * 1s) cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: loy-ring 0.95s calc(var(--d) * 1s) cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 @keyframes loy-ring {
   0% { opacity: 0.9; transform: scale(1); }
@@ -449,7 +449,7 @@ summary:focus-visible {
   opacity: 0;
 }
 .loy-play .loy-pizza-wrap {
-  animation: loy-pizza-in 2s 5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: loy-pizza-in 1.25s 3.1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 @keyframes loy-pizza-in {
   0% { opacity: 0; transform: scale(0.35) rotate(-26deg); filter: blur(14px); }
@@ -457,7 +457,7 @@ summary:focus-visible {
   100% { opacity: 1; transform: scale(1) rotate(0deg); filter: blur(0); }
 }
 .loy-play .loy-pizza {
-  animation: loy-float 8s 7s ease-in-out infinite;
+  animation: loy-float 7s 4.5s ease-in-out infinite;
 }
 @keyframes loy-float {
   0%, 100% { transform: translateY(0) rotate(0deg); }
@@ -467,7 +467,7 @@ summary:focus-visible {
   opacity: 0;
 }
 .loy-play .loy-glow {
-  animation: loy-glow-in 2.4s 4.9s ease-out forwards;
+  animation: loy-glow-in 1.5s 3s ease-out forwards;
 }
 @keyframes loy-glow-in {
   from { opacity: 0; transform: scale(0.5); }
@@ -478,7 +478,7 @@ summary:focus-visible {
   transform: translateY(10px);
 }
 .loy-play .loy-tag {
-  animation: loy-tag-in 0.9s 6.2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: loy-tag-in 0.6s 3.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 @keyframes loy-tag-in {
   to { opacity: 1; transform: translateY(0); }

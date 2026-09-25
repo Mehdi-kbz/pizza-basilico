@@ -45,26 +45,7 @@ export function LoyaltySection() {
           style={{ background: "radial-gradient(700px 360px at 12% 0%, rgba(255,255,255,0.07), transparent 65%)" }}
         />
 
-        {/* halo chaud + pizza (apparaissent à la fin) */}
-        <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10">
-          <div
-            className="loy-glow absolute bottom-[-30%] left-1/2 h-[80%] w-[110%] -translate-x-1/2 md:bottom-auto md:left-auto md:right-[-8%] md:top-[6%] md:h-[100%] md:w-[62%] md:translate-x-0"
-            style={{ background: "radial-gradient(closest-side, rgba(242,106,61,0.55), rgba(242,106,61,0.12) 60%, transparent 100%)" }}
-          />
-          <div className="absolute left-1/2 bottom-[-34%] w-[92%] -translate-x-1/2 md:bottom-auto md:left-auto md:right-[-5%] md:top-1/2 md:w-[50%] md:-translate-y-1/2 md:translate-x-0">
-            <div className="loy-pizza-wrap">
-              <div className="loy-pizza">
-                <PizzaPhoto
-                  name="hero"
-                  src="/pizzas/hero.webp"
-                  className="aspect-square w-full !object-contain drop-shadow-[0_30px_50px_rgba(0,0,0,0.6)]"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="relative px-6 py-9 sm:px-10 md:px-14 md:py-14 min-h-[560px] md:min-h-[440px]">
+        <div className="relative px-6 py-9 sm:px-10 md:px-14 md:py-14 md:min-h-[430px]">
           <div className="max-w-[440px]">
             <p className="text-[0.72rem] font-bold uppercase tracking-[0.18em] text-[#ff8a5c]">Carte de fidélité</p>
             <h2 id="loyalty-title" className="display mt-3 text-[clamp(1.8rem,4.4vw,2.7rem)]">
@@ -79,7 +60,7 @@ export function LoyaltySection() {
             <ol aria-hidden="true" className="mt-7 grid grid-cols-5 gap-2.5 sm:gap-3.5">
               {Array.from({ length: TOTAL }, (_, i) => {
                 const big = i >= FILLED_FAST;
-                const d = big ? (i === FILLED_FAST ? 2.6 : 3.9) : 0.4 + i * 0.11;
+                const d = big ? (i === FILLED_FAST ? 1.5 : 2.35) : 0.25 + i * 0.07;
                 return (
                   <li
                     key={i}
@@ -98,6 +79,20 @@ export function LoyaltySection() {
             <p className="loy-tag mt-6 inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm font-semibold backdrop-blur">
               <span aria-hidden="true">🎁</span> Votre pizza offerte
             </p>
+          </div>
+
+          {/* La pizza reste toujours entièrement dans la carte : sous le texte sur mobile, à droite sur grand écran */}
+          <div className="relative mx-auto mt-2 aspect-square w-[62%] max-w-[240px] md:absolute md:right-[6%] md:top-1/2 md:mt-0 md:h-[78%] md:w-auto md:max-w-none md:-translate-y-1/2">
+            <div
+              aria-hidden="true"
+              className="loy-glow pointer-events-none absolute -inset-[28%] rounded-full"
+              style={{ background: "radial-gradient(closest-side, rgba(242,106,61,0.5), rgba(242,106,61,0.1) 60%, transparent 100%)" }}
+            />
+            <div className="loy-pizza-wrap relative h-full w-full">
+              <div className="loy-pizza h-full w-full">
+                <PizzaPhoto name="hero" src="/pizzas/hero.webp" className="h-full w-full !object-contain drop-shadow-[0_24px_36px_rgba(0,0,0,0.55)]" />
+              </div>
+            </div>
           </div>
         </div>
       </div>
