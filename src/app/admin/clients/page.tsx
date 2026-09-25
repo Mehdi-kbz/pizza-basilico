@@ -6,6 +6,7 @@ import { PAID_STATUSES } from "@/lib/admin-time";
 import { STAMPS_REQUIRED_FOR_FREE_ITEM } from "@/lib/loyalty";
 import { AdminShell } from "../AdminShell";
 import { StampEditor } from "./StampEditor";
+import { AccountActions } from "./AccountActions";
 
 export const dynamic = "force-dynamic";
 
@@ -54,6 +55,7 @@ export default async function AdminClientsPage({ searchParams }: { searchParams:
                     <p className="text-xs text-fg-faint">Client depuis le {day.format(c.createdAt)}{c.newsletterConsent && !c.newsletterConsent.unsubscribedAt ? " · newsletter ✓" : ""}</p>
                   </div>
                   <div className="text-sm tnum"><p className="font-semibold">{s?._count ?? 0} commande{(s?._count ?? 0) > 1 ? "s" : ""}</p><p className="text-fg-faint">{eur(s?._sum.totalCents ?? 0)} dépensés</p></div>
+                  <AccountActions customerId={c.id} status={c.passwordHash ? (c.emailVerifiedAt ? "verified" : "pending") : "none"} canEdit={staff.role === "OWNER"} />
                   <StampEditor customerId={c.id} stamps={c.loyaltyCard?.stampCount ?? 0} required={STAMPS_REQUIRED_FOR_FREE_ITEM} canEdit={staff.role === "OWNER"} />
                 </div>
               </li>

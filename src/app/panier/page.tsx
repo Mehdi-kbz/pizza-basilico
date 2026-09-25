@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { getCustomerSession } from "@/lib/require-customer";
 import { getMenuData } from "@/lib/menu-data";
 import { CheckoutClient } from "./CheckoutClient";
 import type { UpsellItem } from "./UpsellPopup";
@@ -13,6 +14,7 @@ const hour = new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-digi
 export default async function PanierPage({ searchParams }: { searchParams: Promise<{ s?: string }> }) {
   const { s } = await searchParams;
   const now = new Date();
+  const customer = await getCustomerSession();
 
   // Desserts (faits maison) et boissons proposés en fin de commande.
   const { categories } = await getMenuData();
@@ -44,6 +46,7 @@ export default async function PanierPage({ searchParams }: { searchParams: Promi
     <main>
       <CheckoutClient
         upsell={upsell}
+        customerEmail={customer?.email ?? null}
         session={
           session
             ? {

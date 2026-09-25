@@ -614,3 +614,20 @@ summary:focus-visible {
   .rv-frame, .rv-shine, .rv-spark, .rv-cta::after, .rv-arrow { animation: none !important; }
   .rv-spark { display: none; }
 }
+
+/* ------------------------------ Tampons (tunnel de commande) ------------------------------ */
+.stamp-cross path {
+  fill: none;
+  stroke: #ee5a2a;
+  stroke-width: 5.5;
+  stroke-linecap: round;
+  stroke-dasharray: 34;
+  stroke-dashoffset: 34;
+  animation: loy-draw 0.32s calc(var(--i) * 0.06s + 0.05s) cubic-bezier(0.65, 0, 0.35, 1) forwards;
+}
+.stamp-cross path:nth-child(2) {
+  animation-delay: calc(var(--i) * 0.06s + 0.17s);
+}
+@media (prefers-reduced-motion: reduce) {
+  .stamp-cross path { animation-delay: 0s !important; }
+}

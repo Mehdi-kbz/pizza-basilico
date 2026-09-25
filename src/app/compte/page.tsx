@@ -94,13 +94,13 @@ export default async function ComptePage() {
             <p className="text-sm mt-5 leading-relaxed">
               {loyalty.eligibleForFreeItem ? (
                 <span className="text-brass">
-                  <strong>Une pizza offerte vous attend.</strong> Cochez la case au moment de votre
-                  prochaine commande pour l&rsquo;utiliser.
+                  <strong>Une pizza offerte vous attend.</strong> Cochez « utiliser ma pizza offerte » à
+                  votre prochaine commande.
                 </span>
               ) : (
                 <span className="text-fg-dim">
                   Encore <strong className="text-fg tnum">{loyalty.stampsUntilFree}</strong> pizza(s)
-                  et la suivante est offerte. Un tampon par pizza ou panuozzo commandé.
+                  et la suivante est offerte. Un tampon par pizza ou panuozzo commandé, avec votre e-mail.
                 </span>
               )}
             </p>

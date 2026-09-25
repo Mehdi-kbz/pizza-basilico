@@ -37,6 +37,8 @@ export async function sendMagicLinkEmail(to: string, loginUrl: string) {
 }
 
 interface OrderForEmail {
+  /** Lien de confirmation de l'e-mail, si un compte vient d'être créé avec cette commande. */
+  verifyUrl?: string;
   dailyOrderNumber: number;
   pickupName: string;
   totalCents: number;
@@ -111,7 +113,37 @@ export async function sendOrderConfirmationEmail(order: OrderForEmail) {
         <tr><td style="padding-top:8px;font-size:16px;font-weight:700;">Total payé</td><td style="padding-top:8px;text-align:right;font-size:20px;font-weight:700;color:#c4441a;">${eur(order.totalCents)}</td></tr>
       </table>
       ${order.note ? `<p style="margin:18px 0 0;font-size:13px;color:#6a5041;"><strong>Votre note :</strong> ${esc(order.note)}</p>` : ""}
+      ${
+        order.verifyUrl
+          ? `<div style="margin:22px 0 0;padding:16px;border-radius:16px;background:#fff1e8;text-align:center;">
+        <p style="margin:0 0 10px;font-size:14px;">Votre compte est créé. Confirmez votre e-mail pour retrouver vos commandes et utiliser vos pizzas offertes.</p>
+        <a href="${order.verifyUrl}" style="display:inline-block;background:#d9441a;color:#fff;padding:11px 22px;border-radius:999px;text-decoration:none;font-weight:700;font-size:14px;">Confirmer mon e-mail</a>
+      </div>`
+          : ""
+      }
       <p style="margin:22px 0 0;font-size:13px;color:#866a5a;">Donnez votre nom au comptoir : on vous appellera. À tout de suite !</p>
+    </div>
+  </div>
+</div>`,
+  });
+}
+
+/** Lien pour choisir (ou réinitialiser) son mot de passe — valable 1 h. */
+export async function sendPasswordResetEmail(to: string, url: string) {
+  await getEmailProvider().send({
+    to,
+    subject: "Votre mot de passe — Pizza Basilico",
+    html: `
+<div style="background:#fff6ef;padding:24px 12px;font-family:-apple-system,'Segoe UI',sans-serif;color:#2b1710;">
+  <div style="max-width:480px;margin:0 auto;background:#fff;border-radius:24px;overflow:hidden;box-shadow:0 12px 40px rgba(160,72,30,.15);">
+    <div style="background:linear-gradient(160deg,#f4703f,#d9441a);padding:26px 24px;text-align:center;color:#fff;">
+      <p style="margin:0;font-size:11px;letter-spacing:.16em;text-transform:uppercase;opacity:.9;">Pizza Basilico</p>
+      <p style="margin:10px 0 0;font-size:20px;font-weight:700;">Choisissez votre mot de passe</p>
+    </div>
+    <div style="padding:24px;font-size:15px;line-height:1.6;text-align:center;">
+      <p style="margin:0 0 18px;">Cliquez pour définir votre mot de passe. Votre e-mail sera confirmé et vous serez connecté.</p>
+      <a href="${url}" style="display:inline-block;background:#d9441a;color:#fff;padding:13px 26px;border-radius:999px;text-decoration:none;font-weight:700;">Choisir mon mot de passe</a>
+      <p style="margin:18px 0 0;color:#866a5a;font-size:12px;">Ce lien est valable 1 heure. Si vous n'êtes pas à l'origine de cette demande, ignorez ce message.</p>
     </div>
   </div>
 </div>`,

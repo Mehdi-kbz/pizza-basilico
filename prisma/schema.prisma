@@ -57,7 +57,9 @@ model AuditLog {
 model Customer {
   id            String   @id @default(cuid())
   email         String   @unique
-  hasAccount    Boolean  @default(false) // a activé le lien magique au moins une fois
+  hasAccount    Boolean  @default(false) // a défini un mot de passe (ou activé le lien magique) au moins une fois
+  passwordHash  String? // optionnel : on peut commander sans compte ; le mot de passe protège la carte de fidélité
+  emailVerifiedAt DateTime? // e-mail confirmé par lien : requis pour se connecter et utiliser une pizza offerte
   createdAt     DateTime @default(now())
 
   orders          Order[]

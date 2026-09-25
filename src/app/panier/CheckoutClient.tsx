@@ -8,6 +8,8 @@ import { PizzaPhoto } from "@/components/PizzaPhoto";
 import { ConfirmationCard, type ConfirmationItem } from "@/components/ConfirmationCard";
 import { useCart, type CartLine } from "@/lib/cart-store";
 import { UpsellPopup, type UpsellItem } from "./UpsellPopup";
+import { StampsMini } from "@/components/StampsMini";
+import { PasswordField } from "@/components/PasswordField";
 
 const eur = (cents: number) => (cents / 100).toLocaleString("fr-FR", { style: "currency", currency: "EUR" });
 
@@ -22,8 +24,12 @@ interface SessionInfo {
 }
 interface Loyalty {
   stampCount: number;
+  stampsRequired: number;
   eligibleForFreeItem: boolean;
   stampsUntilFree: number;
+  account: "none" | "guest" | "password";
+  verified: boolean;
+  loggedIn: boolean;
 }
 interface Placed {
   clientSecret: string;
@@ -31,6 +37,7 @@ interface Placed {
   orderNumber: number;
   totalCents: number;
   slot: { start: Date; end: Date } | null;
+  accountCreated: boolean;
 }
 interface Done {
   orderNumber: number;
@@ -40,6 +47,7 @@ interface Done {
   items: ConfirmationItem[];
   name: string;
   email: string;
+  accountPending: boolean;
 }
 
 function lineDetails(l: CartLine) {
@@ -53,13 +61,16 @@ function lineDetails(l: CartLine) {
 const UPSELL_DELAY_MS = 10_000;
 const UPSELL_SEEN_KEY = "pb-upsell-seen";
 
-export function CheckoutClient({ session, upsell }: { session: SessionInfo | null; upsell: UpsellItem[] }) {
+export function CheckoutClient({ session, upsell, customerEmail }: { session: SessionInfo | null; upsell: UpsellItem[]; customerEmail: string | null }) {
   const { lines, subtotalCents, itemCount, changeQty, add, clear } = useCart();
   const [showUpsell, setShowUpsell] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
   const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(customerEmail ?? "");
+  const [password, setPassword] = useState("");
+  const [loyaltyLoading, setLoyaltyLoading] = useState(false);
+  const [linkState, setLinkState] = useState<"idle" | "sending" | "sent">("idle");
   const [note, setNote] = useState("");
   const [tip, setTip] = useState(0);
   const [promoInput, setPromoInput] = useState("");
@@ -115,13 +126,37 @@ export function CheckoutClient({ session, upsell }: { session: SessionInfo | nul
 
   // Fidélité : consultée dès qu'un e-mail valide est saisi.
   useEffect(() => {
-    if (!email.includes("@")) return;
+    const valid = /^\S+@\S+\.\S{2,}$/.test(email.trim());
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setLoyaltyLoading(valid);
+    if (!valid) {
+      setLoyalty(null);
+      return;
+    }
+    let cancelled = false;
     const handle = setTimeout(async () => {
-      const res = await fetch(`/api/loyalty?email=${encodeURIComponent(email)}`);
+      const res = await fetch(`/api/loyalty?email=${encodeURIComponent(email.trim())}`);
+      if (cancelled) return;
       setLoyalty(res.ok ? await res.json() : null);
-    }, 500);
-    return () => clearTimeout(handle);
+      setLoyaltyLoading(false);
+      setLinkState("idle");
+    }, 350);
+    return () => {
+      cancelled = true;
+      clearTimeout(handle);
+    };
   }, [email]);
+
+  // Une pizza offerte s'utilise avec le mot de passe du compte (ou déjà connecté) et un e-mail confirmé.
+  const canRedeemNow = !!loyalty?.eligibleForFreeItem && (loyalty.loggedIn || (loyalty.account === "password" && loyalty.verified));
+  const redeeming = redeemLoyalty && canRedeemNow;
+  const creatingAccount = loyalty?.account === "none" || (loyalty?.account === "password" && !loyalty.verified);
+
+  async function sendActivationLink() {
+    setLinkState("sending");
+    await fetch("/api/customer/forgot", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: email.trim() }) });
+    setLinkState("sent");
+  }
 
   // Le code promo appliqué est recalculé si le panier change.
   const appliedCode = promo?.code;
@@ -158,7 +193,7 @@ export function CheckoutClient({ session, upsell }: { session: SessionInfo | nul
   }
 
   const loyaltyDiscount =
-    redeemLoyalty && loyalty?.eligibleForFreeItem && lines.length > 0
+    redeeming && lines.length > 0
       ? Math.max(...lines.map((l) => l.unitPriceCents))
       : 0;
   const discount = (promo?.discountCents ?? 0) + loyaltyDiscount;
@@ -183,6 +218,8 @@ export function CheckoutClient({ session, upsell }: { session: SessionInfo | nul
     if (lines.length === 0) return setError("Votre panier est vide.");
     if (!name.trim()) return setError("Indiquez votre prénom : c'est lui que l'on appellera.");
     if (!/^\S+@\S+\.\S+$/.test(email.trim())) return setError("Indiquez une adresse e-mail pour recevoir votre reçu.");
+    if (redeeming && !loyalty?.loggedIn && !password) return setError("Saisissez le mot de passe de votre compte pour utiliser la pizza offerte.");
+    if (!redeeming && creatingAccount && password && password.length < 8) return setError("Mot de passe : 8 caractères minimum (ou laissez le champ vide pour commander sans compte).");
 
     setSubmitting(true);
     try {
@@ -196,7 +233,8 @@ export function CheckoutClient({ session, upsell }: { session: SessionInfo | nul
           note: note.trim() || undefined,
           tipCents: tip,
           promoCode: promo?.code,
-          redeemLoyalty: redeemLoyalty && !!loyalty?.eligibleForFreeItem,
+          redeemLoyalty: redeeming,
+          password: password || undefined,
           items: lines.map((l) => ({
             menuItemId: l.menuItemId,
             sizeId: l.sizeId,
@@ -216,6 +254,7 @@ export function CheckoutClient({ session, upsell }: { session: SessionInfo | nul
         orderNumber: data.dailyOrderNumber,
         totalCents: data.totalCents,
         slot: data.slotStart ? { start: new Date(data.slotStart), end: new Date(data.slotEnd) } : null,
+        accountCreated: !!data.accountCreated,
       });
       window.setTimeout(() => paymentRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 150);
     } finally {
@@ -233,6 +272,7 @@ export function CheckoutClient({ session, upsell }: { session: SessionInfo | nul
       items: snapshot,
       name: name.trim(),
       email: email.trim(),
+      accountPending: placed.accountCreated,
     });
     clear();
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -382,27 +422,63 @@ export function CheckoutClient({ session, upsell }: { session: SessionInfo | nul
             />
           </div>
 
-          {loyalty && (
-            <div className="rounded-2xl bg-flame/10 px-4 py-3">
-              {loyalty.eligibleForFreeItem ? (
-                <label className="flex items-start gap-2.5 text-sm cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={redeemLoyalty}
-                    onChange={(e) => setRedeemLoyalty(e.target.checked)}
-                    disabled={locked}
-                    className="mt-0.5 accent-[#d9441a]"
-                  />
-                  <span>
-                    <strong className="text-ember">Une pizza offerte vous attend.</strong> L&rsquo;utiliser (la plus
-                    chère du panier).
-                  </span>
-                </label>
-              ) : (
-                <p className="text-sm text-fg-dim tnum">
-                  🎟️ {loyalty.stampCount} tampon{loyalty.stampCount > 1 ? "s" : ""} — encore {loyalty.stampsUntilFree}{" "}
-                  pour une pizza offerte.
-                </p>
+          {(loyaltyLoading || loyalty) && (
+            <div className="rounded-2xl bg-flame/[0.08] p-4">
+              <StampsMini stamps={loyalty?.stampCount ?? 0} required={loyalty?.stampsRequired ?? 10} loading={loyaltyLoading && !loyalty} />
+
+              {loyalty && (
+                <div className="mt-3.5 flex flex-col gap-3 text-sm">
+                  {loyalty.loggedIn && <p className="text-[0.78rem] text-basil">✓ Connecté à votre compte</p>}
+
+                  {!loyalty.eligibleForFreeItem && (
+                    <p className="text-fg-dim">
+                      {loyalty.stampCount === 0 ? "1 tampon par pizza commandée : la 10ᵉ est offerte." : <>Encore <strong className="tnum text-fg">{loyalty.stampsUntilFree}</strong> pizza{loyalty.stampsUntilFree > 1 ? "s" : ""} et la suivante est offerte.</>}
+                    </p>
+                  )}
+
+                  {loyalty.eligibleForFreeItem && canRedeemNow && (
+                    <>
+                      <label className="flex cursor-pointer items-start gap-2.5">
+                        <input type="checkbox" checked={redeemLoyalty} onChange={(e) => setRedeemLoyalty(e.target.checked)} disabled={locked} className="mt-0.5 accent-[#d9441a]" />
+                        <span><strong className="text-ember">🎁 Une pizza offerte vous attend.</strong> L&rsquo;utiliser (la plus chère du panier).</span>
+                      </label>
+                      {redeemLoyalty && !loyalty.loggedIn && (
+                        <div>
+                          <label htmlFor="redeem-pass" className="mb-1.5 block text-xs font-semibold">Mot de passe de votre compte</label>
+                          <PasswordField id="redeem-pass" value={password} onChange={setPassword} autoComplete="current-password" disabled={locked} />
+                          <a href={`/compte/mot-de-passe-oublie?email=${encodeURIComponent(email.trim())}`} className="mt-1.5 inline-block text-xs text-ember underline">Mot de passe oublié ?</a>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {loyalty.eligibleForFreeItem && !canRedeemNow && (
+                    <div className="rounded-xl bg-white/70 p-3">
+                      <p><strong className="text-ember">🎁 Une pizza offerte vous attend !</strong> Pour l&rsquo;utiliser, activez votre compte : on vous envoie un lien pour choisir un mot de passe (30 secondes).</p>
+                      {linkState === "sent" ? (
+                        <p className="mt-2 text-xs text-basil">✓ Lien envoyé à {email.trim()}. Vous reviendrez directement sur votre panier.</p>
+                      ) : (
+                        <button type="button" onClick={sendActivationLink} disabled={linkState === "sending"} className="btn btn-primary mt-2.5 !py-2 !px-4 !text-[0.8rem]">
+                          {linkState === "sending" ? "Envoi…" : "Recevoir le lien"}
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  {creatingAccount && !loyalty.eligibleForFreeItem && (
+                    <div>
+                      <label htmlFor="new-pass" className="mb-1.5 block text-xs font-semibold">
+                        {loyalty.account === "none" ? "Créer un mot de passe" : "Choisir un mot de passe"} <span className="font-normal text-fg-faint">(facultatif)</span>
+                      </label>
+                      <PasswordField id="new-pass" value={password} onChange={setPassword} autoComplete="new-password" placeholder="8 caractères minimum" disabled={locked} />
+                      <p className="mt-1.5 text-[0.72rem] leading-snug text-fg-faint">Pour suivre vos commandes et protéger votre carte de fidélité. Sans mot de passe, vous commandez et gagnez vos tampons quand même.</p>
+                    </div>
+                  )}
+
+                  {loyalty.account === "guest" && !loyalty.eligibleForFreeItem && !loyalty.loggedIn && (
+                    <p className="text-[0.72rem] text-fg-faint">Envie de suivre vos commandes ? <a href={`/compte/mot-de-passe-oublie?email=${encodeURIComponent(email.trim())}`} className="text-ember underline">Activer mon compte</a></p>
+                  )}
+                </div>
               )}
             </div>
           )}

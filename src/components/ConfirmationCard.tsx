@@ -37,6 +37,7 @@ export function ConfirmationCard({
   slot,
   items,
   trackingUrl,
+  accountPending,
 }: {
   orderNumber: number;
   name: string;
@@ -45,6 +46,8 @@ export function ConfirmationCard({
   slot?: { start: Date; end: Date } | null;
   items: ConfirmationItem[];
   trackingUrl: string;
+  /** Un compte vient d'être créé : l'e-mail reste à confirmer via le lien du reçu. */
+  accountPending?: boolean;
 }) {
   return (
     <div className="mx-auto max-w-md pop-in">
@@ -139,6 +142,12 @@ export function ConfirmationCard({
           {email && (
             <p className="mt-4 text-center text-[0.78rem] text-fg-faint">
               ✉️ Un reçu vous est envoyé à <strong className="text-fg-dim">{email}</strong>
+            </p>
+          )}
+
+          {accountPending && (
+            <p className="mt-3 rounded-2xl bg-flame/10 px-4 py-3 text-center text-[0.8rem] leading-relaxed text-fg-dim">
+              🔐 Votre compte est créé. <strong className="text-fg">Confirmez votre e-mail</strong> avec le bouton du reçu pour retrouver vos commandes et utiliser vos pizzas offertes.
             </p>
           )}
 

@@ -24,8 +24,8 @@ function isExpired(lastEarnedAt: Date | null) {
 
 /** Statut de fidélité pour un e-mail donné (crée le client s'il n'existe pas encore). */
 export async function getLoyaltyStatus(email: string): Promise<LoyaltyStatus> {
-  const customer = await prisma.customer.findUnique({
-    where: { email },
+  const customer = await prisma.customer.findFirst({
+    where: { email: { equals: email.trim(), mode: "insensitive" } },
     include: { loyaltyCard: true },
   });
   if (!customer?.loyaltyCard) {

@@ -13,6 +13,9 @@ import {
 import { getPaymentProvider } from "@/lib/payments";
 import { signOrderTrackingToken } from "@/lib/auth";
 import { getLoyaltyStatus } from "@/lib/loyalty";
+import { getCustomerSession } from "@/lib/require-customer";
+import { setPassword, passwordProblem, checkRedeemCredentials } from "@/lib/customer-auth";
+import { tooManyAttempts, recordAttempt, clearAttempts } from "@/lib/rate-limit";
 import { OrderChannel } from "@/generated/prisma/client";
 
 /**
@@ -30,6 +33,8 @@ const bodySchema = z.object({
   tipCents: z.number().int().min(0).max(5000).default(0),
   promoCode: z.string().optional(),
   redeemLoyalty: z.boolean().default(false),
+  /** Facultatif : crée un compte (1re commande) ou sert de preuve pour utiliser une pizza offerte. */
+  password: z.string().max(100).optional(),
   channel: z.enum(["ONLINE", "WALKUP_QR", "WALKUP_STAFF"]).default("ONLINE"),
   items: z
     .array(
@@ -54,11 +59,44 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Requête invalide.", details: parsed.error.flatten() }, { status: 400 });
   }
   const body = parsed.data;
+  const email = body.email.trim().toLowerCase();
 
   const session = await prisma.serviceSession.findUnique({ where: { id: body.sessionId } });
   if (!session) return NextResponse.json({ error: "Session introuvable." }, { status: 404 });
   if (!session.isOrderingOpen) {
     return NextResponse.json({ error: "Les commandes sont actuellement fermées pour cette session." }, { status: 409 });
+  }
+
+  // Client : retrouvé par e-mail (sans tenir compte de la casse), créé au besoin — on peut toujours commander sans compte.
+  let customer =
+    (await prisma.customer.findFirst({ where: { email: { equals: email, mode: "insensitive" } } })) ??
+    (await prisma.customer.create({ data: { email } }));
+
+  // Mot de passe facultatif : crée le compte (e-mail à confirmer par le lien du reçu). Un compte déjà confirmé n'est jamais modifié ici.
+  let accountCreated = false;
+  if (body.password && !customer.emailVerifiedAt) {
+    const problem = passwordProblem(body.password);
+    if (problem) return NextResponse.json({ error: problem, code: "WEAK_PASSWORD" }, { status: 400 });
+    customer = await setPassword(customer.id, body.password, false);
+    accountCreated = true;
+  }
+
+  // Pizza offerte : mot de passe du compte requis (sauf si le client est déjà connecté), et e-mail confirmé.
+  if (body.redeemLoyalty) {
+    const session = await getCustomerSession();
+    const loggedIn = session?.sub === customer.id && !!customer.emailVerifiedAt;
+    if (!loggedIn) {
+      const rlKey = `redeem:${customer.id}`;
+      if (tooManyAttempts(rlKey, 6, 15 * 60_000)) {
+        return NextResponse.json({ error: "Trop d'essais. Réessayez dans quelques minutes.", code: "RATE_LIMIT" }, { status: 429 });
+      }
+      const check = await checkRedeemCredentials(customer, body.password);
+      if (!check.ok) {
+        if (check.code === "BAD_PASSWORD") recordAttempt(rlKey);
+        return NextResponse.json({ error: check.message, code: check.code }, { status: 401 });
+      }
+      clearAttempts(rlKey);
+    }
   }
 
   let priced: Awaited<ReturnType<typeof priceCart>>;
@@ -69,7 +107,7 @@ export async function POST(req: Request) {
     discount = await applyPromoCode(body.promoCode, priced.subtotalCents);
 
     if (body.redeemLoyalty) {
-      const loyalty = await getLoyaltyStatus(body.email);
+      const loyalty = await getLoyaltyStatus(email);
       if (!loyalty.eligibleForFreeItem) {
         throw new CartValidationError("Pas assez de tampons de fidélité pour un article offert.");
       }
@@ -106,12 +144,6 @@ export async function POST(req: Request) {
   }
 
   try {
-    const customer = await prisma.customer.upsert({
-      where: { email: body.email },
-      update: {},
-      create: { email: body.email },
-    });
-
     const totalDiscountCents = discount.discountCents + loyaltyDiscountCents;
     const totalCents = Math.max(0, priced.subtotalCents - totalDiscountCents + body.tipCents);
     const dailyOrderNumber = await nextDailyOrderNumber(body.sessionId);
@@ -121,7 +153,7 @@ export async function POST(req: Request) {
         sessionId: body.sessionId,
         timeSlotId: timeSlot.id,
         customerId: customer.id,
-        guestEmail: body.email,
+        guestEmail: email,
         channel: body.channel as OrderChannel,
         dailyOrderNumber,
         pickupName: body.pickupName,
@@ -168,7 +200,7 @@ export async function POST(req: Request) {
         amountCents: totalCents,
         currency: "eur",
         orderId: order.id,
-        customerEmail: body.email,
+        customerEmail: email,
       });
     } catch (paymentError) {
       // Compensation : la commande créée juste au-dessus et le créneau réservé
@@ -201,6 +233,7 @@ export async function POST(req: Request) {
       slotEnd: timeSlot.endAt,
       clientSecret: payment.clientSecret,
       trackingUrl: `/suivi/${order.id}?t=${trackingToken}`,
+      accountCreated,
     });
   } catch (e) {
     // Compensation : la commande n'a pas pu être créée/payée, on libère le créneau réservé.

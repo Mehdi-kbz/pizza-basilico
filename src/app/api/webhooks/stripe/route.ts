@@ -4,6 +4,7 @@ import { getPaymentProvider } from "@/lib/payments";
 import { releaseTimeSlot } from "@/lib/slots";
 import { settleLoyaltyForOrder } from "@/lib/loyalty";
 import { sendOrderConfirmationEmail } from "@/lib/email";
+import { verifyUrlFor } from "@/lib/customer-auth";
 import { notifyOrdersChanged } from "@/lib/realtime";
 import { OrderStatus, PaymentStatus } from "@/generated/prisma/client";
 
@@ -55,10 +56,12 @@ export async function POST(req: Request) {
             },
             timeSlot: true,
             session: { include: { location: true } },
+            customer: true,
           },
         });
         if (full) {
-          await sendOrderConfirmationEmail(full).catch((e) => console.error("Échec d'envoi du reçu :", e));
+          const pending = full.customer && full.customer.passwordHash && !full.customer.emailVerifiedAt ? full.customer : null;
+          await sendOrderConfirmationEmail({ ...full, verifyUrl: pending ? verifyUrlFor(pending) : undefined }).catch((e) => console.error("Échec d'envoi du reçu :", e));
         }
         await notifyOrdersChanged(order.sessionId).catch((e) => console.error("[realtime] notify :", e));
       }
