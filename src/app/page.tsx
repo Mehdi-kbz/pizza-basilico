@@ -3,6 +3,7 @@ import { getMenuData } from "@/lib/menu-data";
 import { PizzaPhoto } from "@/components/PizzaPhoto";
 import { CarteClient } from "./carte/CarteClient";
 import { LoyaltySection } from "@/components/LoyaltySection";
+import { ReviewsBadge } from "@/components/ReviewsBadge";
 import { NewsletterForm } from "./NewsletterForm";
 
 export const dynamic = "force-dynamic";
@@ -90,6 +91,9 @@ export default async function HomePage() {
 
       {/* ------------------------------ FIDÉLITÉ ----------------------------- */}
       <LoyaltySection />
+
+      {/* ------------------------------ AVIS GOOGLE -------------------------- */}
+      <ReviewsBadge />
 
       {/* ------------------------------ PIED DE PAGE ------------------------- */}
       <section className="mx-auto max-w-6xl px-3 sm:px-5 pt-8 pb-4">

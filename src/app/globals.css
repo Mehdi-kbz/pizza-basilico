@@ -497,3 +497,117 @@ summary:focus-visible {
     animation-delay: 0s !important;
   }
 }
+
+/* ------------------------------ Bandeau avis Google ------------------------------ */
+/* Cycle de 7 s en boucle : les étoiles se remplissent une à une, un reflet les traverse,
+   le compteur repart de zéro. Les animations ne tournent que pendant que le bandeau est visible. */
+
+.rv-frame {
+  background: linear-gradient(120deg, #ffd76a, #f26a3d 35%, #ffd76a 65%, #f26a3d);
+  background-size: 250% 100%;
+  animation: rv-border 6s linear infinite;
+  animation-play-state: paused;
+}
+@keyframes rv-border {
+  to { background-position: 250% 0; }
+}
+
+.rv-star {
+  position: relative;
+  width: 30px;
+  height: 30px;
+  flex: none;
+}
+.rv-star svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.rv-star .rv-fill {
+  clip-path: inset(0 100% 0 0);
+  animation: rv-fill 7s calc(var(--i) * 0.28s) cubic-bezier(0.65, 0, 0.35, 1) infinite;
+  animation-play-state: paused;
+  filter: drop-shadow(0 3px 6px rgba(245, 158, 11, 0.45));
+}
+@keyframes rv-fill {
+  0% { clip-path: inset(0 100% 0 0); transform: scale(0.85); }
+  9% { clip-path: inset(0 0 0 0); transform: scale(1.22) rotate(-6deg); }
+  14% { transform: scale(1) rotate(0); }
+  82% { clip-path: inset(0 0 0 0); opacity: 1; }
+  92% { clip-path: inset(0 0 0 0); opacity: 0; }
+  93%, 100% { clip-path: inset(0 100% 0 0); opacity: 1; transform: scale(0.85); }
+}
+
+.rv-shine {
+  position: absolute;
+  inset: -4px;
+  pointer-events: none;
+  background: linear-gradient(100deg, transparent 38%, rgba(255, 255, 255, 0.95) 50%, transparent 62%);
+  background-size: 250% 100%;
+  background-position: 160% 0;
+  mix-blend-mode: soft-light;
+  animation: rv-shine 7s 1.6s ease-in-out infinite;
+  animation-play-state: paused;
+}
+@keyframes rv-shine {
+  0% { background-position: 160% 0; }
+  22%, 100% { background-position: -60% 0; }
+}
+
+.rv-spark {
+  position: absolute;
+  bottom: -14px;
+  width: 12px;
+  height: 12px;
+  color: #f5b301;
+  opacity: 0;
+  pointer-events: none;
+  animation: rv-spark 5.5s var(--d) ease-in infinite;
+  animation-play-state: paused;
+}
+@keyframes rv-spark {
+  0% { opacity: 0; transform: translateY(0) scale(0.4) rotate(0); }
+  15% { opacity: 0.9; }
+  100% { opacity: 0; transform: translateY(-190px) scale(1) rotate(160deg); }
+}
+
+.rv-cta::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: 999px;
+  border: 2px solid rgba(242, 106, 61, 0.55);
+  opacity: 0;
+  animation: rv-pulse 2.8s 1.2s ease-out infinite;
+  animation-play-state: paused;
+}
+@keyframes rv-pulse {
+  0% { opacity: 0.8; transform: scale(1); }
+  70%, 100% { opacity: 0; transform: scale(1.14, 1.5); }
+}
+.rv-arrow {
+  display: inline-block;
+  animation: rv-nudge 1.6s ease-in-out infinite;
+  animation-play-state: paused;
+}
+@keyframes rv-nudge {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(4px); }
+}
+
+.rv-on .rv-frame,
+.rv-on .rv-star .rv-fill,
+.rv-on .rv-shine,
+.rv-on .rv-spark,
+.rv-on .rv-cta::after,
+.rv-on .rv-arrow {
+  animation-play-state: running;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* état fixe : étoiles pleines, aucun mouvement */
+  .rv-star .rv-fill { animation: none !important; clip-path: inset(0 0 0 0); }
+  .rv-frame, .rv-shine, .rv-spark, .rv-cta::after, .rv-arrow { animation: none !important; }
+  .rv-spark { display: none; }
+}
